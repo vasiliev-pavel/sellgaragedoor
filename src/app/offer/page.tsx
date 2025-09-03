@@ -1,13 +1,15 @@
-// src/app/offer/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+// src/app/offer/page.tsx (ПОЛНАЯ ГОТОВАЯ ВЕРСИЯ)
 
 "use client";
 
-import Link from "next/link"; // Already imported, which is good
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
+import { Mail, Phone, Check, AlertTriangle } from "lucide-react";
 
-// --- TYPES AND MOCK DATA ---
+// --- ТИПЫ И ДАННЫЕ (без изменений) ---
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
 interface UserIntake {
@@ -19,7 +21,7 @@ interface UserIntake {
 
 interface PagePayload {
   originalImage?: string;
-  generatedImage?: string;
+  generatedImage?: string; // This is the 4-quadrant composite image
   intake?: UserIntake;
 }
 
@@ -91,6 +93,9 @@ export default function OfferPage() {
   const [selectedStyle, setSelectedStyle] = useState<"A" | "B" | "C" | "D">(
     "A"
   );
+  const [emailStatus, setEmailStatus] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
 
   useEffect(() => {
     const savedData = sessionStorage.getItem("garageDesigns");
@@ -112,10 +117,87 @@ export default function OfferPage() {
     return computeTradeInCredit(intake.doors, intake.material);
   }, [intake]);
 
+  const selectedDoor = useMemo(
+    () => DOOR_CATALOG.find((d) => d.imageLabel === selectedStyle),
+    [selectedStyle]
+  );
+
   const getFullPrice = (option: DoorOption) =>
     option.basePrice + option.installPrice;
 
-  if (!payload || !intake) {
+  const handleConfirmOffer = async () => {
+    if (!payload?.intake || !selectedDoor) return;
+    setEmailStatus("sending");
+
+    try {
+      const response = await fetch("/api/confirm-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInfo: payload.intake,
+          selectedDoor: selectedDoor,
+          tradeInCredit: tradeInCredit,
+          generatedImage: payload.generatedImage,
+        }),
+      });
+      if (response.ok) {
+        setEmailStatus("success");
+      } else {
+        setEmailStatus("error");
+      }
+    } catch (error) {
+      console.error("Failed to send confirmation email:", error);
+      setEmailStatus("error");
+    }
+  };
+
+  const ConfirmButton = ({ isMobile = false }) => {
+    const baseClasses =
+      "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white shadow-sm transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+
+    switch (emailStatus) {
+      case "sending":
+        return (
+          <button
+            disabled
+            className={`${baseClasses} bg-slate-400 cursor-not-allowed`}
+          >
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            Sending...
+          </button>
+        );
+      case "success":
+        return (
+          <button
+            disabled
+            className={`${baseClasses} bg-emerald-500 cursor-not-allowed`}
+          >
+            <Check size={20} /> Offer Sent!
+          </button>
+        );
+      case "error":
+        return (
+          <button
+            onClick={handleConfirmOffer}
+            className={`${baseClasses} bg-red-500 hover:bg-red-600 focus-visible:outline-red-600`}
+          >
+            <AlertTriangle size={20} /> Try Again
+          </button>
+        );
+      default: // idle
+        return (
+          <button
+            onClick={handleConfirmOffer}
+            className={`${baseClasses} bg-blue-600 hover:bg-blue-500 focus-visible:outline-blue-600`}
+          >
+            <Mail size={isMobile ? 18 : 20} />
+            {isMobile ? "Confirm" : "Confirm Offer by Email"}
+          </button>
+        );
+    }
+  };
+
+  if (!payload || !intake || !selectedDoor) {
     return (
       <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 min-h-screen grid place-items-center">
         <div className="text-center">
@@ -128,11 +210,15 @@ export default function OfferPage() {
     );
   }
 
+  const finalPriceForSelected = Math.max(
+    0,
+    getFullPrice(selectedDoor) - tradeInCredit
+  );
+
   return (
-    <main className="bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 min-h-screen">
+    <main className="bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 min-h-screen pb-40 lg:pb-0">
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          {/* FIX 1: Using <Link> for internal navigation */}
           <Link
             href="/"
             aria-label="Illinois Garage Door Repair — home"
@@ -147,25 +233,11 @@ export default function OfferPage() {
               className="h-14 w-auto"
             />
           </Link>
-          {/* External links like "tel:" correctly use the <a> tag */}
           <a
             href="tel:+18472500221"
             className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                d="M2 5l5-2 3 5-3 2a16 16 0 007 7l2-3 5 3-2 5c-7 1-16-8-15-17z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Phone size={16} />
             <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
             <span className="font-bold">(847) 250-0221</span>
           </a>
@@ -176,60 +248,55 @@ export default function OfferPage() {
         <div className="lg:grid lg:grid-cols-3 lg:gap-12">
           <div className="lg:col-span-2 space-y-8">
             <section>
-              {/* FIX 3: Escaping apostrophe */}
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
                 {"Your Home's Transformation & Instant Savings"}
               </h1>
-              {/* FIX 3: Escaping apostrophes */}
               <p className="mt-3 text-lg text-slate-600">
                 {
                   "You're one step away from a stunning new look. We've applied 4 popular styles to your photo. Select an option below to see your final price with your trade-in credit applied."
                 }
               </p>
             </section>
-
             <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="relative aspect-video w-full rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-100">
                 {payload.generatedImage ? (
                   <>
-                    {/* FIX 2: Using <Image> instead of <img> */}
                     <Image
                       src={`data:image/png;base64,${payload.generatedImage}`}
                       alt="A composite image showing four different garage door styles on your home"
                       layout="fill"
                       objectFit="cover"
                     />
-                    {(["A", "B", "C", "D"] as const).map((label, idx) => {
-                      const pos = [
-                        "top-0 left-0",
-                        "top-0 right-0",
-                        "bottom-0 left-0",
-                        "bottom-0 right-0",
-                      ][idx];
-                      return (
-                        <div
-                          key={label}
-                          className={`absolute ${pos} w-1/2 h-1/2`}
+                    {(["A", "B", "C", "D"] as const).map((label, idx) => (
+                      <div
+                        key={label}
+                        className={`absolute ${
+                          [
+                            "top-0 left-0",
+                            "top-0 right-0",
+                            "bottom-0 left-0",
+                            "bottom-0 right-0",
+                          ][idx]
+                        } w-1/2 h-1/2`}
+                      >
+                        <span
+                          className={`absolute inset-2 rounded-lg transition-all duration-300 ring-4 ${
+                            selectedStyle === label
+                              ? "ring-blue-600 ring-offset-2 ring-offset-slate-900/50"
+                              : "ring-transparent"
+                          }`}
+                        ></span>
+                        <span
+                          className={`absolute top-3 left-3 inline-flex items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold transition ${
+                            selectedStyle === label
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-900/60 text-white"
+                          }`}
                         >
-                          <span
-                            className={`absolute inset-2 rounded-lg transition-all duration-300 ring-4 ${
-                              selectedStyle === label
-                                ? "ring-blue-600 ring-offset-2 ring-offset-slate-900/50"
-                                : "ring-transparent"
-                            }`}
-                          ></span>
-                          <span
-                            className={`absolute top-3 left-3 inline-flex items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold transition ${
-                              selectedStyle === label
-                                ? "bg-blue-600 text-white"
-                                : "bg-slate-900/60 text-white"
-                            }`}
-                          >
-                            {label}
-                          </span>
-                        </div>
-                      );
-                    })}
+                          {label}
+                        </span>
+                      </div>
+                    ))}
                   </>
                 ) : (
                   <div className="w-full h-full grid place-items-center text-slate-500 font-medium">
@@ -238,7 +305,6 @@ export default function OfferPage() {
                 )}
               </div>
             </section>
-
             <section>
               <h2 className="text-2xl font-bold tracking-tight">
                 Select a Style to See Your Price
@@ -299,7 +365,7 @@ export default function OfferPage() {
             </section>
           </div>
 
-          <aside className="lg:col-span-1 mt-12 lg:mt-0">
+          <aside className="hidden lg:block lg:col-span-1 mt-12 lg:mt-0">
             <div className="lg:sticky lg:top-28 space-y-6">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-lg font-bold text-slate-900">
@@ -325,33 +391,62 @@ export default function OfferPage() {
                   during your on-site measurement.
                 </p>
               </div>
-
               <div className="bg-slate-900 text-white rounded-2xl shadow-lg p-6">
-                <h3 className="text-xl font-bold">
-                  Ready to Finalize Your Choice?
-                </h3>
+                <h3 className="text-xl font-bold">Ready to Finalize?</h3>
                 <p className="mt-2 text-slate-300 text-sm">
-                  Lock in your price and get a precise, no-obligation quote. Our
-                  Chicago-based team is ready to help. An expert will confirm
-                  measurements and answer all your questions.
+                  Lock in your price by confirming your selection. We'll email
+                  you a copy and call you shortly.
                 </p>
-                <a
-                  href="tel:+18472500221"
-                  className="mt-5 block w-full text-center rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition"
-                >
-                  Schedule Free Measure & Lock Price
-                </a>
-                <button
-                  onClick={() => router.push("/")}
-                  className="mt-3 w-full text-center rounded-xl bg-transparent border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition"
-                >
-                  Or Edit My Details
-                </button>
+                <div className="mt-5 space-y-3">
+                  <ConfirmButton />
+                  <div className="relative flex items-center py-1">
+                    <div className="flex-grow border-t border-slate-600"></div>
+                    <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase">
+                      Or
+                    </span>
+                    <div className="flex-grow border-t border-slate-600"></div>
+                  </div>
+                  <a
+                    href="tel:+18472500221"
+                    className="w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white shadow-sm transition-colors bg-slate-700 hover:bg-slate-600"
+                  >
+                    <Phone size={20} /> Call Us Directly
+                  </a>
+                </div>
               </div>
             </div>
           </aside>
         </div>
       </div>
+
+      <AnimatePresence>
+        {selectedDoor && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: "0%" }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] p-3"
+          >
+            <div className="mx-auto max-w-md flex items-center gap-3">
+              <div className="flex-grow min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate">
+                  {selectedDoor.name}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {"Final Price:"}{" "}
+                  <span className="font-bold text-lg text-emerald-600">
+                    ${finalPriceForSelected}
+                  </span>
+                </p>
+              </div>
+              <div className="flex-shrink-0 w-36">
+                <ConfirmButton isMobile={true} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
