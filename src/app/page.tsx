@@ -205,7 +205,7 @@ export default function Home() {
             className="flex items-center"
           >
             <Image
-              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il3T50x171.webp"
+              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
               alt="Illinois Garage Door Repair Chicago logo"
               width={350}
               height={171}
