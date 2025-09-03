@@ -16,6 +16,7 @@
     "next": "15.5.2",
     "nodemailer": "^7.0.6",
     "react": "19.1.0",
+    "react-compare-image": "^3.5.9",
     "react-dom": "19.1.0"
   },
   "devDependencies": {

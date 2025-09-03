@@ -1,4 +1,4 @@
-// src/app/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+// src/app/page.tsx (ФИНАЛЬНАЯ ВЕРСИЯ С НОВЫМ ЗАГОЛОВКОМ)
 
 "use client";
 
@@ -6,8 +6,14 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-// FIX 3: Removed unused 'Phone' icon from imports
-import { CheckCircle, UploadCloud, Star } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Eye,
+  Wrench,
+  UploadCloud,
+  Star,
+  Phone,
+} from "lucide-react";
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
@@ -60,12 +66,7 @@ export default function Home() {
         material: "steel" as Material,
       };
     }
-    return {
-      phone: "",
-      email: "",
-      doors: "1",
-      material: "steel" as Material,
-    };
+    return { phone: "", email: "", doors: "1", material: "steel" as Material };
   });
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -73,6 +74,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // --- Все ваши функции-обработчики остаются без изменений ---
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -96,8 +98,8 @@ export default function Home() {
     setFormData((prev) => ({ ...prev, phone: formatted }));
     localStorage.setItem("garageFormPhone", formatted);
   };
-  const compressImage = (file: File): Promise<File> => {
-    return new Promise((resolve) => {
+  const compressImage = (file: File): Promise<File> =>
+    new Promise((resolve) => {
       const img = document.createElement("img");
       img.src = URL.createObjectURL(file);
       img.onload = () => {
@@ -132,7 +134,6 @@ export default function Home() {
       };
       img.onerror = () => resolve(file);
     });
-  };
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = await compressImage(e.target.files[0]);
@@ -152,7 +153,6 @@ export default function Home() {
     setFormData((p) => ({ ...p, material }));
   const validatePhoneNumber = (phone: string) =>
     phone.replace(/[^\d]/g, "").length === 10;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
@@ -163,7 +163,6 @@ export default function Home() {
       alert("Please enter a valid 10-digit US phone number.");
       return;
     }
-
     setLoading(true);
     const intake = { ...formData };
     const formDataToSend = new FormData();
@@ -171,7 +170,6 @@ export default function Home() {
     Object.entries(intake).forEach(([k, v]) =>
       formDataToSend.append(k, String(v))
     );
-
     try {
       const response = await fetch("/api/generate-designs", {
         method: "POST",
@@ -201,14 +199,13 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          {/* FIX 1: Using <Link> for internal navigation */}
           <Link
             href="/"
             aria-label="Illinois Garage Door Repair — home"
             className="flex items-center"
           >
             <Image
-              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
+              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il3T50x171.webp"
               alt="Illinois Garage Door Repair Chicago logo"
               width={350}
               height={171}
@@ -220,20 +217,7 @@ export default function Home() {
             href="tel:+18472500221"
             className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path
-                d="M2 5l5-2 3 5-3 2a16 16 0 007 7l2-3 5 3-2 5c-7 1-16-8-15-17z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Phone size={16} />
             <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
             <span className="font-bold">(847) 250-0221</span>
           </a>
@@ -244,35 +228,47 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="grid lg:grid-cols-5 gap-12 xl:gap-16 items-start">
             <section className="lg:col-span-2 lg:sticky lg:top-28">
+              {/* ИЗМЕНЕНИЕ: Новый заголовок и подзаголовок в соответствии с вашим запросом */}
               <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold leading-tight text-slate-900">
-                See Your New Door,{" "}
-                <span className="text-[#E86A2F]">Before You Buy</span>
+                We Will{" "}
+                <span className="text-[#E86A2F]">
+                  Buy Your Old Garage Door!
+                </span>
               </h1>
-              <p className="mt-5 text-slate-600 text-lg">
-                Stop guessing. Upload a photo to see new garage doors on your
-                home in seconds. Plus, get an instant trade-in credit for your
-                old door.
+              <p className="mt-3 text-lg text-slate-600 font-medium">
+                ...with a purchase of a new door from us.
               </p>
+
+              {/* ИЗМЕНЕНИЕ: Основной текст переписан, чтобы соответствовать новому заголовку */}
+              <p className="mt-5 text-slate-600 text-lg">
+                {
+                  "Your old garage door is your down payment on a beautiful new one. Snap a photo to get an instant trade-in credit towards a complete upgrade, professionally installed by our team."
+                }
+              </p>
+
               <div className="mt-8 space-y-4 text-slate-700">
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <ArrowRightLeft className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>100% Free AI Designs:</strong> See 4 popular styles
-                    perfectly fitted to your home.
+                    <strong>Instant Trade-In Value:</strong> Get a guaranteed
+                    credit for your old door in seconds, applied directly to
+                    your upgrade.
                   </span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <Wrench className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>Guaranteed Trade-in Value:</strong> We pay you for
-                    your old door and haul it away for free.
+                    <strong>Free Removal & Full Service:</strong> When you
+                    upgrade, we handle the complete removal and haul-away of
+                    your old door at no extra cost.
                   </span>
                 </div>
                 <div className="flex items-start gap-3">
-                  <CheckCircle className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+                  <Eye className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>Trusted in Chicagoland:</strong> Licensed, bonded,
-                    and insured professionals serving you.
+                    <strong>Visualize Your Upgrade:</strong> See how different
+                    styles of new doors will look on your actual home before
+                    making a decision.
                   </span>
                 </div>
               </div>
@@ -287,7 +283,7 @@ export default function Home() {
                         1
                       </div>
                       <h3 className="text-xl font-semibold text-slate-900">
-                        Upload a Photo of Your Garage
+                        Upload a Photo of Your Current Door
                       </h3>
                     </div>
                     {!previewUrl ? (
@@ -347,7 +343,7 @@ export default function Home() {
                         2
                       </div>
                       <h3 className="text-xl font-semibold text-slate-900">
-                        Tell Us About Your Current Door
+                        Tell Us About Your Old Door
                       </h3>
                     </div>
                     <div>
@@ -375,7 +371,7 @@ export default function Home() {
                     </div>
                     <div>
                       <label className="block text-base font-medium text-slate-800 mb-3">
-                        Material of Your Current Door{" "}
+                        Material of Your Old Door{" "}
                         <span className="text-[#E86A2F]">*</span>
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -410,7 +406,7 @@ export default function Home() {
                         3
                       </div>
                       <h3 className="text-xl font-semibold text-slate-900">
-                        Where to Send Your Designs
+                        Where to Send Your Trade-In Offer
                       </h3>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -464,15 +460,15 @@ export default function Home() {
                       {loading ? (
                         <>
                           {" "}
-                          <Spinner /> Processing...{" "}
+                          <Spinner /> Calculating Your Credit...{" "}
                         </>
                       ) : (
-                        "Generate My Designs & Offer"
+                        "Get My Trade-In Offer"
                       )}
                     </button>
                     <p className="mt-4 text-xs text-center text-slate-500">
                       By submitting, you agree to receive texts & emails about
-                      your quote.
+                      your offer.
                     </p>
                   </div>
                 </form>
@@ -487,7 +483,6 @@ export default function Home() {
               <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Trusted by Homeowners Across Chicagoland
               </h2>
-              {/* FIX 2: Escaping apostrophe */}
               <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
                 {
                   "We're proud of our reputation for quality work and happy customers."

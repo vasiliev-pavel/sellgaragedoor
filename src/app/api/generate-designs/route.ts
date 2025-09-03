@@ -47,7 +47,6 @@ Task:
 6) Do not alter anything except the garage door leaf and its glass/hardware (where specified).
 7) Output a single composite image only (no captions or extra borders).
    Keep the same aspect ratio as the input and add thin, subtle internal gutters between quadrants.
-   Optional tiny corner labels "A", "B", "C", "D" are OK.
 
 Door styles (in the order and placement specified below):
 A (top-left): Standard short raised panels, white color, with a top-row of windows.

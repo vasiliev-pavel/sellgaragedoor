@@ -1,5 +1,3 @@
-// src/app/offer/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
-
 "use client";
 
 import Link from "next/link";
@@ -7,9 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
-import { Mail, Phone, Check, AlertTriangle } from "lucide-react";
+import { Mail, Phone, Check, AlertTriangle, Eye, Sparkles } from "lucide-react";
 
-// --- ТИПЫ И ДАННЫЕ (без изменений) ---
+// --- ТИПЫ И ДАННЫЕ ---
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
 interface UserIntake {
@@ -21,7 +19,7 @@ interface UserIntake {
 
 interface PagePayload {
   originalImage?: string;
-  generatedImage?: string; // This is the 4-quadrant composite image
+  generatedImage?: string;
   intake?: UserIntake;
 }
 
@@ -96,6 +94,8 @@ export default function OfferPage() {
   const [emailStatus, setEmailStatus] = useState<
     "idle" | "sending" | "success" | "error"
   >("idle");
+  const [splitImages, setSplitImages] = useState<string[]>([]);
+  const [isShowingOriginal, setIsShowingOriginal] = useState(false);
 
   useEffect(() => {
     const savedData = sessionStorage.getItem("garageDesigns");
@@ -104,7 +104,39 @@ export default function OfferPage() {
       return;
     }
     try {
-      setPayload(JSON.parse(savedData) as PagePayload);
+      const parsedData = JSON.parse(savedData) as PagePayload;
+      setPayload(parsedData);
+
+      if (parsedData.generatedImage) {
+        const img = new window.Image();
+        img.src = `data:image/png;base64,${parsedData.generatedImage}`;
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          const w = img.width,
+            h = img.height,
+            halfW = w / 2,
+            halfH = h / 2;
+          canvas.width = halfW;
+          canvas.height = halfH;
+
+          const quadrants = [
+            { x: 0, y: 0 }, // A
+            { x: halfW, y: 0 }, // B
+            { x: 0, y: halfH }, // C
+            { x: halfW, y: halfH }, // D
+          ];
+
+          const imagesDataUrls = quadrants.map((q) => {
+            ctx.clearRect(0, 0, halfW, halfH);
+            ctx.drawImage(img, q.x, q.y, halfW, halfH, 0, 0, halfW, halfH);
+            return canvas.toDataURL();
+          });
+          setSplitImages(imagesDataUrls);
+        };
+      }
     } catch {
       router.push("/");
     }
@@ -122,13 +154,17 @@ export default function OfferPage() {
     [selectedStyle]
   );
 
+  const activeAfterImage = useMemo(() => {
+    const styleIndex = ["A", "B", "C", "D"].indexOf(selectedStyle);
+    return splitImages.length > styleIndex ? splitImages[styleIndex] : null;
+  }, [selectedStyle, splitImages]);
+
   const getFullPrice = (option: DoorOption) =>
     option.basePrice + option.installPrice;
 
   const handleConfirmOffer = async () => {
     if (!payload?.intake || !selectedDoor) return;
     setEmailStatus("sending");
-
     try {
       const response = await fetch("/api/confirm-offer", {
         method: "POST",
@@ -140,11 +176,7 @@ export default function OfferPage() {
           generatedImage: payload.generatedImage,
         }),
       });
-      if (response.ok) {
-        setEmailStatus("success");
-      } else {
-        setEmailStatus("error");
-      }
+      setEmailStatus(response.ok ? "success" : "error");
     } catch (error) {
       console.error("Failed to send confirmation email:", error);
       setEmailStatus("error");
@@ -184,7 +216,7 @@ export default function OfferPage() {
             <AlertTriangle size={20} /> Try Again
           </button>
         );
-      default: // idle
+      default:
         return (
           <button
             onClick={handleConfirmOffer}
@@ -197,7 +229,7 @@ export default function OfferPage() {
     }
   };
 
-  if (!payload || !intake || !selectedDoor) {
+  if (!payload || !intake || !selectedDoor || splitImages.length === 0) {
     return (
       <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 min-h-screen grid place-items-center">
         <div className="text-center">
@@ -253,61 +285,78 @@ export default function OfferPage() {
               </h1>
               <p className="mt-3 text-lg text-slate-600">
                 {
-                  "You're one step away from a stunning new look. We've applied 4 popular styles to your photo. Select an option below to see your final price with your trade-in credit applied."
+                  "We've applied 4 popular styles to your photo. Use the toggle to compare with your original door. Select a style below to change the preview."
                 }
               </p>
             </section>
-            <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="relative aspect-video w-full rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-100">
-                {payload.generatedImage ? (
-                  <>
-                    <Image
-                      src={`data:image/png;base64,${payload.generatedImage}`}
-                      alt="A composite image showing four different garage door styles on your home"
-                      layout="fill"
-                      objectFit="cover"
-                    />
-                    {(["A", "B", "C", "D"] as const).map((label, idx) => (
-                      <div
-                        key={label}
-                        className={`absolute ${
-                          [
-                            "top-0 left-0",
-                            "top-0 right-0",
-                            "bottom-0 left-0",
-                            "bottom-0 right-0",
-                          ][idx]
-                        } w-1/2 h-1/2`}
-                      >
-                        <span
-                          className={`absolute inset-2 rounded-lg transition-all duration-300 ring-4 ${
-                            selectedStyle === label
-                              ? "ring-blue-600 ring-offset-2 ring-offset-slate-900/50"
-                              : "ring-transparent"
-                          }`}
-                        ></span>
-                        <span
-                          className={`absolute top-3 left-3 inline-flex items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold transition ${
-                            selectedStyle === label
-                              ? "bg-blue-600 text-white"
-                              : "bg-slate-900/60 text-white"
-                          }`}
-                        >
-                          {label}
-                        </span>
+
+            <section className="space-y-4">
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setIsShowingOriginal(!isShowingOriginal)}
+                  className="flex items-center gap-3 rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-md ring-1 ring-slate-200 hover:bg-slate-100 transition-colors"
+                >
+                  {isShowingOriginal ? (
+                    <Sparkles className="h-5 w-5 text-blue-500" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-slate-500" />
+                  )}
+                  <span>
+                    {isShowingOriginal ? "Show New Design" : "Show Original"}
+                  </span>
+                </button>
+              </div>
+
+              <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden ring-1 ring-slate-200">
+                <AnimatePresence initial={false}>
+                  {isShowingOriginal ? (
+                    <motion.div
+                      key="before"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="absolute inset-0"
+                    >
+                      <Image
+                        src={`data:image/png;base64,${payload.originalImage}`}
+                        alt="Your original garage door"
+                        layout="fill"
+                        objectFit="cover"
+                      />
+                      <div className="absolute top-3 left-3 bg-black/50 text-white text-xs font-bold py-1 px-2 rounded">
+                        BEFORE
                       </div>
-                    ))}
-                  </>
-                ) : (
-                  <div className="w-full h-full grid place-items-center text-slate-500 font-medium">
-                    Preview Image Not Available
-                  </div>
-                )}
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key={selectedStyle} // Меняем ключ, чтобы анимация срабатывала при смене стиля
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="absolute inset-0"
+                    >
+                      {activeAfterImage && (
+                        <Image
+                          src={activeAfterImage}
+                          alt={`After view - ${selectedDoor.name}`}
+                          layout="fill"
+                          objectFit="cover"
+                        />
+                      )}
+                      <div className="absolute top-3 right-3 bg-blue-600 text-white text-xs font-bold py-1 px-2 rounded">
+                        AFTER
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </section>
+
             <section>
               <h2 className="text-2xl font-bold tracking-tight">
-                Select a Style to See Your Price
+                Select a Style to Update "After" Preview
               </h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {DOOR_CATALOG.map((opt) => {
@@ -317,10 +366,13 @@ export default function OfferPage() {
                   return (
                     <button
                       key={opt.id}
-                      onClick={() => setSelectedStyle(opt.imageLabel)}
+                      onClick={() => {
+                        setSelectedStyle(opt.imageLabel);
+                        setIsShowingOriginal(false);
+                      }}
                       className={`text-left p-5 rounded-2xl border-2 transition-all duration-200 ${
                         isSelected
-                          ? "bg-white border-blue-600 shadow-lg"
+                          ? "bg-white border-blue-600 shadow-lg ring-2 ring-blue-200"
                           : "bg-white border-slate-200 hover:border-slate-400"
                       }`}
                     >
@@ -393,7 +445,6 @@ export default function OfferPage() {
               </div>
               <div className="bg-slate-900 text-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-bold">Ready to Finalize?</h3>
-                {/* ИСПРАВЛЕНИЕ: Обернуто в {} для избежания ошибки с апострофом */}
                 <p className="mt-2 text-slate-300 text-sm">
                   {
                     "Lock in your price by confirming your selection. We'll email you a copy and call you shortly."
