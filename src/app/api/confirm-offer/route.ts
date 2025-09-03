@@ -1,7 +1,7 @@
-// src/app/api/confirm-offer/route.ts (ИСПРАВЛЕННАЯ ВЕРСИЯ)
-
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+// ИЗМЕНЕНО: Импортируем основной тип для опций письма
+import type { MailOptions } from "nodemailer";
 
 // Убедитесь, что эти переменные окружения заданы в Vercel
 const SMTP_HOST = process.env.SMTP_HOST;
@@ -122,18 +122,26 @@ export async function POST(request: NextRequest) {
 
     const transporter = createTransporter();
 
-    const attachments: any[] = []; // ИСПРАВЛЕНИЕ: Добавлен тип any[] для attachments, чтобы удовлетворить linter
+    const attachments = [];
     if (data.generatedImage) {
+      // ИСПРАВЛЕНИЕ: Преобразуем base64 строку в Buffer.
+      // Сначала удаляем префикс данных, если он есть (например, 'data:image/png;base64,')
+      const base64Data = data.generatedImage.replace(
+        /^data:image\/\w+;base64,/,
+        ""
+      );
+
       attachments.push({
         filename: "generated-doors.png",
-        content: data.generatedImage,
-        encoding: "base64",
+        // TypeScript теперь будет доволен, так как content является Buffer
+        content: Buffer.from(base64Data, "base64"),
         cid: "generated-doors-image",
+        // Свойство 'encoding' больше не нужно, так как мы передаем Buffer
       });
     }
 
     const userEmailHtml = createUserEmailTemplate(data);
-    const userMailOptions = {
+    const userMailOptions: MailOptions = {
       from: `"Illinois Garage Door Repair" <${SMTP_USER}>`,
       to: data.userInfo.email,
       subject: "✅ Your Garage Door Offer is Confirmed!",
@@ -142,7 +150,7 @@ export async function POST(request: NextRequest) {
     };
 
     const adminEmailHtml = createAdminEmailTemplate(data);
-    const adminMailOptions = {
+    const adminMailOptions: MailOptions = {
       from: `"Website Lead" <${SMTP_USER}>`,
       to: ADMIN_EMAIL,
       subject: `🔔 New Confirmed Offer from ${data.userInfo.phone}`,
@@ -160,9 +168,7 @@ export async function POST(request: NextRequest) {
       message: "Emails sent successfully",
     });
   } catch (error: unknown) {
-    // ИСПРАВЛЕНИЕ: Заменено any на unknown
     console.error("Error in /api/confirm-offer:", error);
-    // ИСПРАВЛЕНИЕ: Добавлена проверка типа ошибки
     if (error instanceof Error) {
       return NextResponse.json(
         { error: "Failed to send emails", details: error.message },
