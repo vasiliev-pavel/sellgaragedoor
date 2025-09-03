@@ -2,520 +2,383 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+// --- TYPES AND MOCK DATA ---
+// These would likely come from a CMS or API in a real app
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
-interface Intake {
+interface UserIntake {
   phone: string;
   email: string;
   doors: string; // "1" | "2" | "3"
-  garageType: string; // "1-car" | "2-car"
   material: Material;
 }
 
-interface Payload {
+interface PagePayload {
   originalImage?: string;
-  generatedImage?: string;
-  userInfo?: any;
-  intake?: Intake;
+  generatedImage?: string; // This is the 4-quadrant composite image
+  intake?: UserIntake;
 }
 
-interface OfferOption {
+interface DoorOption {
   id: string;
   name: string;
   material: string;
   rValue?: number;
-  msrp: number;
-  install: number;
+  basePrice: number;
+  installPrice: number;
   imageLabel: "A" | "B" | "C" | "D";
+  description: string;
 }
 
-const CATALOG: OfferOption[] = [
+const DOOR_CATALOG: DoorOption[] = [
   {
-    id: "modern-flush",
-    name: "Modern Flush",
+    id: "steel-flush",
+    name: "Modern Steel",
     material: "Insulated Steel",
-    rValue: 12,
-    msrp: 1190,
-    install: 380,
+    rValue: 13,
+    basePrice: 1250,
+    installPrice: 400,
     imageLabel: "A",
+    description:
+      "Sleek, durable, and energy-efficient. A popular choice for modern homes.",
   },
   {
-    id: "raised-panel",
-    name: "Traditional Raised Panel",
-    material: "Steel",
-    rValue: 9,
-    msrp: 990,
-    install: 360,
-    imageLabel: "B",
-  },
-  {
-    id: "carriage",
+    id: "carriage-composite",
     name: "Carriage House",
-    material: "Composite",
+    material: "Wood Composite",
     rValue: 10,
-    msrp: 1490,
-    install: 420,
-    imageLabel: "C",
+    basePrice: 1590,
+    installPrice: 450,
+    imageLabel: "B",
+    description:
+      "Classic charm without the maintenance of real wood. Great curb appeal.",
   },
   {
-    id: "glass",
-    name: "Contemporary Glass",
-    material: "Aluminum/Glass",
-    rValue: 3,
-    msrp: 1890,
-    install: 520,
+    id: "aluminum-glass",
+    name: "Full-View Glass",
+    material: "Aluminum & Glass",
+    rValue: 4,
+    basePrice: 2100,
+    installPrice: 550,
+    imageLabel: "C",
+    description:
+      "Maximizes natural light and provides a stunning, contemporary look.",
+  },
+  {
+    id: "wood-panel",
+    name: "Raised Panel Wood",
+    material: "Solid Hemlock",
+    basePrice: 1950,
+    installPrice: 500,
     imageLabel: "D",
+    description: "The timeless beauty and premium feel of natural wood grain.",
   },
 ];
 
-// простая логика скидки на основе материала и количества дверей
+// Simple logic to calculate trade-in value
 function computeTradeInCredit(doors: string, material: Material): number {
   const count = Math.max(1, parseInt(doors || "1", 10));
-  const perDoor = material === "wood" ? 50 : 80; // дерево = $50, «металл» = $80
-  return perDoor * count;
+  // Higher credit for metal doors as they are easier to recycle/refurbish
+  const perDoorCredit = material === "wood" ? 75 : 120;
+  return perDoorCredit * count;
 }
+
+// --- THE PAGE COMPONENT ---
 
 export default function OfferPage() {
   const router = useRouter();
-  const [payload, setPayload] = useState<Payload | null>(null);
-  const [selectedQuadrant, setSelectedQuadrant] = useState<
-    null | "A" | "B" | "C" | "D"
-  >(null);
-  const [sendingEmail, setSendingEmail] = useState(false);
+  const [payload, setPayload] = useState<PagePayload | null>(null);
+  const [selectedStyle, setSelectedStyle] = useState<"A" | "B" | "C" | "D">(
+    "A"
+  );
 
   useEffect(() => {
-    const saved = sessionStorage.getItem("garageDesigns");
-    if (!saved) {
+    // In a real app, you might fetch this data from a server using a unique ID
+    const savedData = sessionStorage.getItem("garageDesigns");
+    if (!savedData) {
+      // If no data, send them back to the start
       router.push("/");
       return;
     }
     try {
-      setPayload(JSON.parse(saved) as Payload);
+      setPayload(JSON.parse(savedData) as PagePayload);
     } catch {
+      // Handle malformed data
       router.push("/");
     }
   }, [router]);
 
   const intake = payload?.intake;
 
-  const credit = useMemo(() => {
+  const tradeInCredit = useMemo(() => {
     if (!intake) return 0;
     return computeTradeInCredit(intake.doors, intake.material);
   }, [intake]);
 
-  const handleChooseDoor = async (selectedDoor: OfferOption) => {
-    if (!payload || !intake) return;
+  const getFullPrice = (option: DoorOption) =>
+    option.basePrice + option.installPrice;
 
-    setSendingEmail(true);
-
-    try {
-      const emailData = {
-        userInfo: {
-          name: intake.name || "",
-          phone: intake.phone,
-          email: intake.email,
-          doors: intake.doors,
-          garageType: intake.garageType,
-          material: intake.material,
-        },
-        selectedDoor: {
-          id: selectedDoor.id,
-          name: selectedDoor.name,
-          material: selectedDoor.material,
-          rValue: selectedDoor.rValue,
-          msrp: selectedDoor.msrp,
-          install: selectedDoor.install,
-          imageLabel: selectedDoor.imageLabel,
-        },
-        originalImage: payload.originalImage,
-        generatedImage: payload.generatedImage,
-      };
-
-      const response = await fetch("/api/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      if (response.ok) {
-        alert(
-          "Thank you! We've sent you a confirmation email and our team will contact you within 24 hours to schedule your free measurement."
-        );
-      } else {
-        throw new Error("Failed to send email");
-      }
-    } catch (error) {
-      console.error("Error sending email:", error);
-      alert(
-        "There was an error sending your selection. Please try again or contact us directly at (847) 250-0221."
-      );
-    } finally {
-      setSendingEmail(false);
-    }
-  };
-
-  if (!payload) {
+  // Loading state while we retrieve the user's data
+  if (!payload || !intake) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 grid place-items-center">
+      <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 min-h-screen grid place-items-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-slate-200 border-t-[#0E4A7B] mx-auto"></div>
-          <p className="mt-6 text-lg text-slate-700 font-semibold">
-            Loading your offer…
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg font-semibold text-slate-700">
+            Generating your personalized offer...
           </p>
         </div>
       </div>
     );
   }
 
-  const composite = payload.generatedImage;
-  const msrpInstall = (o: OfferOption) => o.msrp + o.install;
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
-      {/* Top bar */}
-      <header className="bg-white/80 backdrop-blur border-b border-slate-200">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-[#0E4A7B] grid place-items-center">
-              <span className="text-white text-sm font-bold">IGD</span>
-            </div>
-            <span className="text-slate-800 font-semibold">
-              Illinois Garage Door Repair
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="hidden sm:inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
+    <main className="bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 min-h-screen">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+          <a
+            href="/"
+            aria-label="Illinois Garage Door Repair — home"
+            className="flex items-center"
+          >
+            <Image
+              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
+              alt="Illinois Garage Door Repair Chicago logo"
+              width={350}
+              height={171}
+              priority
+              className="h-14 w-auto"
+            />
+          </a>
+          <a
+            href="tel:+17735551234"
+            className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              Back to Main
-            </a>
-            <a
-              href="tel:+18472500221"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#E86A2F] px-3 py-2 text-sm font-semibold text-white shadow hover:brightness-110 transition"
-            >
-              24/7 (847) 250-0221
-            </a>
-          </div>
+              <path
+                d="M2 5l5-2 3 5-3 2a16 16 0 007 7l2-3 5 3-2 5c-7 1-16-8-15-17z"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span className="hidden sm:inline">Questions? Call Us:</span>
+            <span className="font-bold">+1 (773) 555-1234</span>
+          </a>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mx-auto max-w-6xl grid lg:grid-cols-3 gap-8">
-          {/* LEFT COLUMN */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Hero preview with interactive quadrants */}
-            <section className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 overflow-hidden">
-              <div className="p-5 sm:p-6 border-b border-slate-200">
-                <p className="uppercase tracking-widest text-[#0E4A7B] text-xs font-bold">
-                  Preview
-                </p>
-                <h1 className="text-2xl font-extrabold text-slate-900">
-                  Your Home with 4 Door Styles
-                </h1>
-                <p className="text-slate-600 mt-1">
-                  We applied four options on your own photo. Click a quadrant to
-                  focus.
-                </p>
-              </div>
+      {/* Main Content Grid */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
+        <div className="lg:grid lg:grid-cols-3 lg:gap-12">
+          {/* Left Column: Visualization & Details */}
+          <div className="lg:col-span-2 space-y-8">
+            <section>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
+                Your Home's Transformation & Instant Savings
+              </h1>
+              <p className="mt-3 text-lg text-slate-600">
+                You're one step away from a stunning new look. We've applied 4
+                popular styles to your photo. Select an option below to see your
+                final price with your trade-in credit applied.
+              </p>
+            </section>
 
-              <div className="p-5 sm:p-6">
-                <div className="relative aspect-square w-full rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-50">
-                  {composite ? (
-                    <>
-                      <img
-                        src={`data:image/png;base64,${composite}`}
-                        alt="Composite with 4 styles"
-                        className="w-full h-full object-cover"
-                      />
-
-                      {/* quadrant overlays */}
-                      {(["A", "B", "C", "D"] as const).map((label, idx) => {
-                        // positions: A TL, B TR, C BL, D BR
-                        const pos = [
-                          "top-0 left-0", // A
-                          "top-0 right-0", // B
-                          "bottom-0 left-0", // C
-                          "bottom-0 right-0", // D
-                        ][idx];
-                        return (
-                          <button
-                            key={label}
-                            aria-label={`Select style ${label}`}
-                            onClick={() => setSelectedQuadrant(label)}
-                            className={`absolute ${pos} w-1/2 h-1/2 outline-none transition-[box-shadow,background]`}
-                            style={{ background: "transparent" }}
+            {/* Interactive Preview */}
+            <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="relative aspect-video w-full rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-100">
+                {payload.generatedImage ? (
+                  <>
+                    <img
+                      src={`data:image/png;base64,${payload.generatedImage}`}
+                      alt="A composite image showing four different garage door styles on your home"
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Interactive Quadrant Overlays */}
+                    {(["A", "B", "C", "D"] as const).map((label, idx) => {
+                      const pos = [
+                        "top-0 left-0",
+                        "top-0 right-0",
+                        "bottom-0 left-0",
+                        "bottom-0 right-0",
+                      ][idx];
+                      return (
+                        <div
+                          key={label}
+                          className={`absolute ${pos} w-1/2 h-1/2`}
+                        >
+                          <span
+                            className={`absolute inset-2 rounded-lg transition-all duration-300 ring-4 ${
+                              selectedStyle === label
+                                ? "ring-blue-600 ring-offset-2 ring-offset-slate-900/50"
+                                : "ring-transparent"
+                            }`}
+                          ></span>
+                          <span
+                            className={`absolute top-3 left-3 inline-flex items-center justify-center rounded-md px-2.5 py-1 text-sm font-bold transition ${
+                              selectedStyle === label
+                                ? "bg-blue-600 text-white"
+                                : "bg-slate-900/60 text-white"
+                            }`}
                           >
-                            {/* inner highlight frame */}
-                            <span
-                              className={`absolute inset-2 rounded-lg transition ring-2
-                                ${
-                                  selectedQuadrant === label
-                                    ? "ring-[#0E4A7B]"
-                                    : "ring-transparent hover:ring-slate-300"
-                                }`}
-                            ></span>
-                            {/* tiny label */}
-                            <span
-                              className={`absolute m-3 inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold
-                                ${
-                                  selectedQuadrant === label
-                                    ? "bg-[#0E4A7B] text-white"
-                                    : "bg-black/60 text-white"
-                                }`}
-                              style={{ top: 0, left: 0 }}
-                            >
-                              {label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </>
-                  ) : (
-                    <div className="w-full h-full grid place-items-center text-slate-500">
-                      Composite not available
-                    </div>
-                  )}
-                </div>
-
-                {/* Mini legend */}
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { label: "A", name: "Modern Flush" },
-                    { label: "B", name: "Traditional Raised Panel" },
-                    { label: "C", name: "Carriage House" },
-                    { label: "D", name: "Contemporary Glass" },
-                  ].map((x) => (
-                    <button
-                      key={x.label}
-                      onClick={() =>
-                        setSelectedQuadrant(x.label as "A" | "B" | "C" | "D")
-                      }
-                      className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ring-1
-                        ${
-                          selectedQuadrant === x.label
-                            ? "ring-[#0E4A7B] bg-slate-50"
-                            : "ring-slate-300 bg-white hover:bg-slate-50"
-                        }`}
-                    >
-                      <span
-                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold
-                        ${
-                          selectedQuadrant === x.label
-                            ? "bg-[#0E4A7B] text-white"
-                            : "bg-slate-800 text-white"
-                        }`}
-                      >
-                        {x.label}
-                      </span>
-                      <span className="text-slate-800">{x.name}</span>
-                    </button>
-                  ))}
-                </div>
+                            {label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="w-full h-full grid place-items-center text-slate-500 font-medium">
+                    Preview Image Not Available
+                  </div>
+                )}
               </div>
             </section>
 
-            {/* Value props */}
-            <section className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-6">
-              <h2 className="text-lg font-bold text-slate-900 mb-4">
-                Why homeowners choose us
+            {/* Door Options Selection */}
+            <section>
+              <h2 className="text-2xl font-bold tracking-tight">
+                Select a Style to See Your Price
               </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-700">
-                <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
-                  ♻️ We buy your old door — instant credit applied.
-                </div>
-                <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
-                  🧰 Pro install & haul-away included.
-                </div>
-                <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
-                  🛡️ Parts & labor warranty.
-                </div>
-                <div className="rounded-lg bg-slate-50 ring-1 ring-slate-200 p-3">
-                  ⏱️ Same/next-day appointments available.
-                </div>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {DOOR_CATALOG.map((opt) => {
+                  const isSelected = selectedStyle === opt.imageLabel;
+                  const fullPrice = getFullPrice(opt);
+                  const finalPrice = Math.max(0, fullPrice - tradeInCredit);
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => setSelectedStyle(opt.imageLabel)}
+                      className={`text-left p-5 rounded-2xl border-2 transition-all duration-200 ${
+                        isSelected
+                          ? "bg-white border-blue-600 shadow-lg"
+                          : "bg-white border-slate-200 hover:border-slate-400"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold text-lg text-slate-900">
+                            {opt.name}
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {opt.material}
+                            {opt.rValue && ` • R-${opt.rValue}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-base font-bold ${
+                            isSelected
+                              ? "bg-blue-600 text-white"
+                              : "bg-slate-800 text-white"
+                          }`}
+                        >
+                          {opt.imageLabel}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm text-slate-600">
+                        {opt.description}
+                      </p>
+                      <div className="mt-4 pt-4 border-t border-slate-200">
+                        <p className="text-xs text-slate-500 line-through">
+                          MSRP + Install: ${fullPrice}
+                        </p>
+                        <p className="text-sm">
+                          After Trade-in:{" "}
+                          <span className="text-2xl font-bold text-emerald-600">
+                            ${finalPrice}
+                          </span>
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            </section>
-
-            {/* FAQ */}
-            <section className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">FAQs</h3>
-              <details className="group border-t border-slate-200 py-3">
-                <summary className="cursor-pointer font-medium text-slate-800">
-                  How is the trade-in credit calculated?
-                </summary>
-                <div className="mt-2 text-sm text-slate-600">
-                  We keep it simple: wood door = $50 per door, metal door
-                  (steel/aluminum/fiberglass) = $80 per door. The credit
-                  multiplies by the number of doors.
-                </div>
-              </details>
-              <details className="group border-t border-slate-200 py-3">
-                <summary className="cursor-pointer font-medium text-slate-800">
-                  What happens to my old door?
-                </summary>
-                <div className="mt-2 text-sm text-slate-600">
-                  We remove it, recycle or refurbish usable materials, and apply
-                  the credit to your new installation.
-                </div>
-              </details>
-              <details className="group border-t border-slate-200 py-3">
-                <summary className="cursor-pointer font-medium text-slate-800">
-                  Can I change the design later?
-                </summary>
-                <div className="mt-2 text-sm text-slate-600">
-                  Yes—your price hold lasts 7 days. We’ll confirm final style at
-                  the free in-home measure.
-                </div>
-              </details>
             </section>
           </div>
 
-          {/* RIGHT COLUMN (sticky) */}
-          <aside className="lg:col-span-1">
-            <div className="lg:sticky lg:top-8 space-y-4">
-              {/* Summary / credit */}
-              <div className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-6">
+          {/* Right Column: CTA & Summary (Sticky) */}
+          <aside className="lg:col-span-1 mt-12 lg:mt-0">
+            <div className="lg:sticky lg:top-28 space-y-6">
+              {/* Trade-in Summary */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-lg font-bold text-slate-900">
-                  Your Trade-in
+                  Your Exclusive Trade-In Offer
                 </h3>
-                {intake ? (
-                  <>
-                    <div className="mt-1 text-sm text-slate-600">
-                      Current door:&nbsp;
-                      <span className="font-medium capitalize">
-                        {String(intake.material).replace("_", " ")}
-                      </span>
-                      &nbsp; • {intake.doors}{" "}
-                      {intake.doors === "1" ? "door" : "doors"}
-                    </div>
-                    <div className="mt-3 rounded-lg bg-emerald-50 ring-1 ring-emerald-200 p-3">
-                      <div className="text-emerald-700 text-sm font-medium">
-                        Estimated credit
-                      </div>
-                      <div className="text-2xl font-extrabold text-emerald-800">
-                        ${credit}
-                      </div>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-500">
-                      Based on material & number of doors. Final offer confirmed
-                      during on-site measure.
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm text-slate-600">
-                    Fill the form to estimate trade-in.
+                <p className="mt-1 text-sm text-slate-600">
+                  For your {intake.doors} old{" "}
+                  <span className="font-medium capitalize">
+                    {intake.material.replace("_", " ")}
+                  </span>{" "}
+                  door(s).
+                </p>
+                <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
+                  <p className="text-sm font-medium text-emerald-800">
+                    Instant Credit Value
                   </p>
-                )}
+                  <p className="text-4xl font-extrabold text-emerald-600">
+                    ${tradeInCredit}
+                  </p>
+                </div>
+                <p className="mt-3 text-xs text-slate-500">
+                  We haul away your old door for free. Final value confirmed
+                  during your on-site measurement.
+                </p>
+              </div>
+
+              {/* Final CTA */}
+              <div className="bg-slate-900 text-white rounded-2xl shadow-lg p-6">
+                <h3 className="text-xl font-bold">
+                  Ready to Finalize Your Choice?
+                </h3>
+                <p className="mt-2 text-slate-300 text-sm">
+                  Lock in your price and get a precise, no-obligation quote. Our
+                  Chicago-based team is ready to help. An expert will confirm
+                  measurements and answer all your questions.
+                </p>
+                <a
+                  href="tel:+17735551234"
+                  className="mt-5 block w-full text-center rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition"
+                >
+                  Schedule Free Measure & Lock Price
+                </a>
                 <button
                   onClick={() => router.push("/")}
-                  className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+                  className="mt-3 w-full text-center rounded-xl bg-transparent border border-slate-600 px-5 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition"
                 >
-                  Edit Details
-                </button>
-              </div>
-
-              {/* Recommendations */}
-              <div className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-900 mb-3">
-                  Recommended Doors
-                </h3>
-                <div className="space-y-3">
-                  {CATALOG.map((opt) => {
-                    const subtotal = msrpInstall(opt);
-                    const after = Math.max(0, subtotal - credit);
-                    const selected = selectedQuadrant === opt.imageLabel;
-                    return (
-                      <div
-                        key={opt.id}
-                        className={`rounded-xl p-4 ring-1 bg-slate-50 ${
-                          selected ? "ring-[#0E4A7B]" : "ring-slate-200"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <div className="font-semibold text-slate-900">
-                              {opt.name}
-                            </div>
-                            <div className="text-xs text-slate-600">
-                              {opt.material}
-                              {opt.rValue ? ` • R${opt.rValue}` : ""}
-                            </div>
-                          </div>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold
-                            ${
-                              selected
-                                ? "bg-[#0E4A7B] text-white"
-                                : "bg-[#0E4A7B]/10 text-[#0E4A7B]"
-                            }`}
-                          >
-                            {selected ? "Selected" : "Trade-in applied"}
-                          </span>
-                        </div>
-                        <div className="mt-2 text-sm text-slate-700">
-                          After trade-in:{" "}
-                          <span className="font-bold">${after}</span>
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500 line-through">
-                          MSRP + install: ${subtotal}
-                        </div>
-                        <div className="mt-3 flex gap-2">
-                          <button
-                            className="flex-1 rounded-lg bg-white ring-1 ring-slate-300 px-3 py-2 text-sm font-semibold hover:bg-slate-50"
-                            onClick={() => setSelectedQuadrant(opt.imageLabel)}
-                          >
-                            See on My Home ({opt.imageLabel})
-                          </button>
-                          <button
-                            className="flex-1 rounded-lg bg-[#0E4A7B] text-white px-3 py-2 text-sm font-semibold hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
-                            onClick={() => handleChooseDoor(opt)}
-                            disabled={sendingEmail}
-                          >
-                            {sendingEmail ? "Sending..." : "Choose"}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* CTA card */}
-              <div className="bg-white rounded-2xl shadow-xl ring-1 ring-slate-200 p-6">
-                <h3 className="text-lg font-bold text-slate-900">Next step</h3>
-                <p className="text-slate-700 text-sm mt-1">
-                  Schedule a free in-home measure to finalize your offer.
-                </p>
-                <button
-                  className="mt-4 w-full rounded-lg bg-[#E86A2F] text-white px-4 py-3 font-semibold hover:brightness-110"
-                  onClick={() =>
-                    alert("Open scheduling modal / link to booking.")
-                  }
-                >
-                  Schedule Free Measure
-                </button>
-                <button className="mt-2 w-full rounded-lg bg-white ring-1 ring-slate-300 px-4 py-3 text-sm font-semibold hover:bg-slate-50">
-                  Lock this price for 7 days
+                  Or Edit My Details
                 </button>
               </div>
             </div>
           </aside>
         </div>
-      </main>
-
-      {/* Mobile sticky CTA */}
-      <div className="lg:hidden fixed bottom-3 inset-x-3">
-        <button
-          onClick={() => alert("Open scheduling modal / link to booking.")}
-          className="w-full rounded-xl shadow-xl bg-[#E86A2F] text-white font-semibold py-3"
-        >
-          Schedule Free Measure
-        </button>
       </div>
-    </div>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
+          <div>
+            <p className="text-sm font-semibold">
+              Illinois Garage Door Repair Co.
+            </p>
+            <p className="mt-1 text-sm text-slate-600">
+              Proudly Serving Chicago & All Suburbs. Your neighbors trust us.
+            </p>
+          </div>
+          <p className="mt-4 text-sm text-slate-500 lg:mt-0">
+            © {new Date().getFullYear()} All Rights Reserved.
+          </p>
+        </div>
+      </footer>
+    </main>
   );
 }
