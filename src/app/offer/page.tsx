@@ -82,6 +82,7 @@ export default function OfferPage() {
   const [selectedQuadrant, setSelectedQuadrant] = useState<
     null | "A" | "B" | "C" | "D"
   >(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("garageDesigns");
@@ -102,6 +103,59 @@ export default function OfferPage() {
     if (!intake) return 0;
     return computeTradeInCredit(intake.doors, intake.material);
   }, [intake]);
+
+  const handleChooseDoor = async (selectedDoor: OfferOption) => {
+    if (!payload || !intake) return;
+
+    setSendingEmail(true);
+
+    try {
+      const emailData = {
+        userInfo: {
+          name: intake.name || "",
+          phone: intake.phone,
+          email: intake.email,
+          doors: intake.doors,
+          garageType: intake.garageType,
+          material: intake.material,
+        },
+        selectedDoor: {
+          id: selectedDoor.id,
+          name: selectedDoor.name,
+          material: selectedDoor.material,
+          rValue: selectedDoor.rValue,
+          msrp: selectedDoor.msrp,
+          install: selectedDoor.install,
+          imageLabel: selectedDoor.imageLabel,
+        },
+        originalImage: payload.originalImage,
+        generatedImage: payload.generatedImage,
+      };
+
+      const response = await fetch("/api/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      if (response.ok) {
+        alert(
+          "Thank you! We've sent you a confirmation email and our team will contact you within 24 hours to schedule your free measurement."
+        );
+      } else {
+        throw new Error("Failed to send email");
+      }
+    } catch (error) {
+      console.error("Error sending email:", error);
+      alert(
+        "There was an error sending your selection. Please try again or contact us directly at (847) 250-0221."
+      );
+    } finally {
+      setSendingEmail(false);
+    }
+  };
 
   if (!payload) {
     return (
@@ -417,14 +471,11 @@ export default function OfferPage() {
                             See on My Home ({opt.imageLabel})
                           </button>
                           <button
-                            className="flex-1 rounded-lg bg-[#0E4A7B] text-white px-3 py-2 text-sm font-semibold hover:brightness-110"
-                            onClick={() =>
-                              alert(
-                                "We’ll reach out to schedule a free measure."
-                              )
-                            }
+                            className="flex-1 rounded-lg bg-[#0E4A7B] text-white px-3 py-2 text-sm font-semibold hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
+                            onClick={() => handleChooseDoor(opt)}
+                            disabled={sendingEmail}
                           >
-                            Choose
+                            {sendingEmail ? "Sending..." : "Choose"}
                           </button>
                         </div>
                       </div>
