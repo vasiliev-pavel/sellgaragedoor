@@ -1,4 +1,4 @@
-// src/app/offer/page.tsx (ПОЛНАЯ ГОТОВАЯ ВЕРСИЯ)
+// src/app/offer/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 
 "use client";
 
@@ -151,7 +151,7 @@ export default function OfferPage() {
     }
   };
 
-  const ConfirmButton = ({ isMobile = false }) => {
+  const ConfirmButton = ({ isMobile = false }: { isMobile?: boolean }) => {
     const baseClasses =
       "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white shadow-sm transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
@@ -393,9 +393,11 @@ export default function OfferPage() {
               </div>
               <div className="bg-slate-900 text-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-bold">Ready to Finalize?</h3>
+                {/* ИСПРАВЛЕНИЕ: Обернуто в {} для избежания ошибки с апострофом */}
                 <p className="mt-2 text-slate-300 text-sm">
-                  Lock in your price by confirming your selection. We'll email
-                  you a copy and call you shortly.
+                  {
+                    "Lock in your price by confirming your selection. We'll email you a copy and call you shortly."
+                  }
                 </p>
                 <div className="mt-5 space-y-3">
                   <ConfirmButton />
