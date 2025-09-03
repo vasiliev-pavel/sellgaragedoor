@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
@@ -217,14 +218,22 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100">
       <header className="bg-white/80 backdrop-blur border-b border-slate-200">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 rounded-full bg-[#0E4A7B] grid place-items-center">
-              <span className="text-white text-sm font-bold">IGD</span>
-            </div>
-            <span className="text-slate-800 font-semibold">
-              Illinois Garage Door Repair
-            </span>
-          </div>
+          {/* Logo */}
+          <a
+            href="/"
+            aria-label="Illinois Garage Door Repair — home"
+            className="flex items-center"
+          >
+            <Image
+              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
+              alt="Illinois Garage Door Repair & More logo"
+              width={350}
+              height={171}
+              priority
+              className="h-12 sm:h-18 w-auto"
+            />
+          </a>
+
           <a
             href="tel:+18472500221"
             className="inline-flex items-center gap-2 rounded-lg bg-[#E86A2F] px-3 py-2 text-sm font-semibold text-white shadow hover:brightness-110 transition"
