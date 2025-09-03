@@ -330,7 +330,7 @@ export default function OfferPage() {
                     </motion.div>
                   ) : (
                     <motion.div
-                      key={selectedStyle} // Меняем ключ, чтобы анимация срабатывала при смене стиля
+                      key={selectedStyle}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
@@ -355,8 +355,9 @@ export default function OfferPage() {
             </section>
 
             <section>
+              {/* ИСПРАВЛЕНИЕ: Обернуто в {} для избежания ошибки */}
               <h2 className="text-2xl font-bold tracking-tight">
-                Select a Style to Update "After" Preview
+                {'Select a Style to Update "After" Preview'}
               </h2>
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 {DOOR_CATALOG.map((opt) => {
