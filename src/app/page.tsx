@@ -1,10 +1,13 @@
+// src/app/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-// NEW: Importing modern icons for a cleaner look
-import { CheckCircle, UploadCloud, Phone, Star } from "lucide-react";
+// FIX 3: Removed unused 'Phone' icon from imports
+import { CheckCircle, UploadCloud, Star } from "lucide-react";
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
@@ -31,7 +34,6 @@ const Spinner = () => (
   </svg>
 );
 
-// NEW: Helper component for displaying star ratings in the new reviews section
 const StarRating = ({ rating = 5 }: { rating?: number }) => (
   <div className="flex items-center gap-0.5">
     {Array.from({ length: 5 }).map((_, i) => (
@@ -71,7 +73,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // No changes needed for your well-written handler functions.
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -200,7 +201,8 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <a
+          {/* FIX 1: Using <Link> for internal navigation */}
+          <Link
             href="/"
             aria-label="Illinois Garage Door Repair — home"
             className="flex items-center"
@@ -213,9 +215,9 @@ export default function Home() {
               priority
               className="h-14 w-auto"
             />
-          </a>
+          </Link>
           <a
-            href="tel:+17735551234"
+            href="tel:+18472500221"
             className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
           >
             <svg
@@ -232,8 +234,8 @@ export default function Home() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className="hidden sm:inline">Questions? Call Us:</span>
-            <span className="font-bold">+1 (773) 555-1234</span>
+            <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
+            <span className="font-bold">(847) 250-0221</span>
           </a>
         </div>
       </header>
@@ -242,10 +244,6 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="grid lg:grid-cols-5 gap-12 xl:gap-16 items-start">
             <section className="lg:col-span-2 lg:sticky lg:top-28">
-              {/* DESIGN TWEAK: More impactful typography and modern icons */}
-              {/* <p className="uppercase tracking-widest text-[#0E4A7B] text-sm font-bold">
-                AI-Powered Visualization
-              </p> */}
               <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold leading-tight text-slate-900">
                 See Your New Door,{" "}
                 <span className="text-[#E86A2F]">Before You Buy</span>
@@ -281,10 +279,8 @@ export default function Home() {
             </section>
 
             <section className="lg:col-span-3">
-              {/* DESIGN TWEAK: Increased shadow and a subtle ring for a more premium, "lifted" feel */}
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-2xl ring-1 ring-slate-900/5 p-6 sm:p-8">
                 <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Step 1: Photo Upload */}
                   <div>
                     <div className="flex items-center gap-4 mb-4">
                       <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
@@ -295,7 +291,6 @@ export default function Home() {
                       </h3>
                     </div>
                     {!previewUrl ? (
-                      // DESIGN TWEAK: Added an icon and improved text for clarity
                       <div className="mt-2">
                         <label
                           htmlFor="file-upload"
@@ -346,7 +341,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Step 2: Door Details */}
                   <div className="space-y-8">
                     <div className="flex items-center gap-4">
                       <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
@@ -366,7 +360,6 @@ export default function Home() {
                             key={d}
                             type="button"
                             onClick={() => handleDoorSelect(d)}
-                            // DESIGN TWEAK: More obvious selected state with a ring and background color
                             className={`text-center p-4 rounded-lg border-2 transition-all duration-200 ${
                               formData.doors === d
                                 ? "border-[#0E4A7B] bg-blue-50  ring-[#0E4A7B]"
@@ -404,15 +397,13 @@ export default function Home() {
                                 : "border-slate-300 bg-white hover:border-slate-400"
                             }`}
                           >
-                            {" "}
-                            {m.l}{" "}
+                            {m.l}
                           </button>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  {/* Step 3: Contact Info */}
                   <div className="space-y-6">
                     <div className="flex items-center gap-4">
                       <div className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
@@ -465,7 +456,6 @@ export default function Home() {
                   </div>
 
                   <div className="pt-4">
-                    {/* DESIGN TWEAK: Stronger hover effect for the main CTA */}
                     <button
                       type="submit"
                       disabled={loading}
@@ -491,21 +481,20 @@ export default function Home() {
           </div>
         </div>
 
-        {/* NEW SECTION: Google Reviews for Social Proof */}
         <section className="py-16 sm:py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 Trusted by Homeowners Across Chicagoland
               </h2>
+              {/* FIX 2: Escaping apostrophe */}
               <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
-                We're proud of our reputation for quality work and happy
-                customers.
+                {
+                  "We're proud of our reputation for quality work and happy customers."
+                }
               </p>
             </div>
-
             <div className="mt-16 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Review 1 */}
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-900">Sarah L.</p>
@@ -513,9 +502,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    "The entire process was seamless! From uploading a photo to
-                    the final installation, the team was professional and
-                    efficient. My new garage door looks amazing."
+                    {
+                      "The entire process was seamless! From uploading a photo to the final installation, the team was professional and efficient. My new garage door looks amazing."
+                    }
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -525,7 +514,6 @@ export default function Home() {
                   </span>
                 </footer>
               </div>
-              {/* Review 2 */}
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-900">Mark P.</p>
@@ -533,9 +521,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    "I was skeptical about the AI visualization, but it was
-                    surprisingly accurate and helped us choose the perfect
-                    style. The trade-in offer was fair. Highly recommend!"
+                    {
+                      "I was skeptical about the AI visualization, but it was surprisingly accurate and helped us choose the perfect style. The trade-in offer was fair. Highly recommend!"
+                    }
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -545,7 +533,6 @@ export default function Home() {
                   </span>
                 </footer>
               </div>
-              {/* Review 3 */}
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-900">David Chen</p>
@@ -553,9 +540,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    "Great service and a fantastic deal. Getting a credit for
-                    our old, beat-up door was a huge plus. The installers were
-                    courteous and cleaned up everything."
+                    {
+                      "Great service and a fantastic deal. Getting a credit for our old, beat-up door was a huge plus. The installers were courteous and cleaned up everything."
+                    }
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -587,7 +574,7 @@ export default function Home() {
               Illinois Garage Door Repair Co.
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Proudly Serving Chicago & All Suburbs.
+              {"Proudly Serving Chicago & All Suburbs."}
             </p>
           </div>
           <p className="mt-4 text-sm text-slate-500 lg:mt-0">

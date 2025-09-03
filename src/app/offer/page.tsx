@@ -1,24 +1,25 @@
+// src/app/offer/page.tsx (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+
 "use client";
 
+import Link from "next/link"; // Already imported, which is good
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 // --- TYPES AND MOCK DATA ---
-// These would likely come from a CMS or API in a real app
-
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
 interface UserIntake {
   phone: string;
   email: string;
-  doors: string; // "1" | "2" | "3"
+  doors: string;
   material: Material;
 }
 
 interface PagePayload {
   originalImage?: string;
-  generatedImage?: string; // This is the 4-quadrant composite image
+  generatedImage?: string;
   intake?: UserIntake;
 }
 
@@ -78,15 +79,11 @@ const DOOR_CATALOG: DoorOption[] = [
   },
 ];
 
-// Simple logic to calculate trade-in value
 function computeTradeInCredit(doors: string, material: Material): number {
   const count = Math.max(1, parseInt(doors || "1", 10));
-  // Higher credit for metal doors as they are easier to recycle/refurbish
   const perDoorCredit = material === "wood" ? 75 : 120;
   return perDoorCredit * count;
 }
-
-// --- THE PAGE COMPONENT ---
 
 export default function OfferPage() {
   const router = useRouter();
@@ -96,17 +93,14 @@ export default function OfferPage() {
   );
 
   useEffect(() => {
-    // In a real app, you might fetch this data from a server using a unique ID
     const savedData = sessionStorage.getItem("garageDesigns");
     if (!savedData) {
-      // If no data, send them back to the start
       router.push("/");
       return;
     }
     try {
       setPayload(JSON.parse(savedData) as PagePayload);
     } catch {
-      // Handle malformed data
       router.push("/");
     }
   }, [router]);
@@ -121,14 +115,13 @@ export default function OfferPage() {
   const getFullPrice = (option: DoorOption) =>
     option.basePrice + option.installPrice;
 
-  // Loading state while we retrieve the user's data
   if (!payload || !intake) {
     return (
       <div className="bg-gradient-to-b from-slate-50 via-white to-slate-100 min-h-screen grid place-items-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600 mx-auto"></div>
           <p className="mt-4 text-lg font-semibold text-slate-700">
-            Generating your personalized offer...
+            {"Generating your personalized offer..."}
           </p>
         </div>
       </div>
@@ -137,10 +130,10 @@ export default function OfferPage() {
 
   return (
     <main className="bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 min-h-screen">
-      {/* Header */}
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <a
+          {/* FIX 1: Using <Link> for internal navigation */}
+          <Link
             href="/"
             aria-label="Illinois Garage Door Repair — home"
             className="flex items-center"
@@ -153,9 +146,10 @@ export default function OfferPage() {
               priority
               className="h-14 w-auto"
             />
-          </a>
+          </Link>
+          {/* External links like "tel:" correctly use the <a> tag */}
           <a
-            href="tel:+17735551234"
+            href="tel:+18472500221"
             className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
           >
             <svg
@@ -172,39 +166,39 @@ export default function OfferPage() {
                 strokeLinejoin="round"
               />
             </svg>
-            <span className="hidden sm:inline">Questions? Call Us:</span>
-            <span className="font-bold">+1 (773) 555-1234</span>
+            <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
+            <span className="font-bold">(847) 250-0221</span>
           </a>
         </div>
       </header>
 
-      {/* Main Content Grid */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="lg:grid lg:grid-cols-3 lg:gap-12">
-          {/* Left Column: Visualization & Details */}
           <div className="lg:col-span-2 space-y-8">
             <section>
+              {/* FIX 3: Escaping apostrophe */}
               <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">
-                Your Home's Transformation & Instant Savings
+                {"Your Home's Transformation & Instant Savings"}
               </h1>
+              {/* FIX 3: Escaping apostrophes */}
               <p className="mt-3 text-lg text-slate-600">
-                You're one step away from a stunning new look. We've applied 4
-                popular styles to your photo. Select an option below to see your
-                final price with your trade-in credit applied.
+                {
+                  "You're one step away from a stunning new look. We've applied 4 popular styles to your photo. Select an option below to see your final price with your trade-in credit applied."
+                }
               </p>
             </section>
 
-            {/* Interactive Preview */}
             <section className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
               <div className="relative aspect-video w-full rounded-xl overflow-hidden ring-1 ring-slate-200 bg-slate-100">
                 {payload.generatedImage ? (
                   <>
-                    <img
+                    {/* FIX 2: Using <Image> instead of <img> */}
+                    <Image
                       src={`data:image/png;base64,${payload.generatedImage}`}
                       alt="A composite image showing four different garage door styles on your home"
-                      className="w-full h-full object-cover"
+                      layout="fill"
+                      objectFit="cover"
                     />
-                    {/* Interactive Quadrant Overlays */}
                     {(["A", "B", "C", "D"] as const).map((label, idx) => {
                       const pos = [
                         "top-0 left-0",
@@ -245,7 +239,6 @@ export default function OfferPage() {
               </div>
             </section>
 
-            {/* Door Options Selection */}
             <section>
               <h2 className="text-2xl font-bold tracking-tight">
                 Select a Style to See Your Price
@@ -293,7 +286,7 @@ export default function OfferPage() {
                           MSRP + Install: ${fullPrice}
                         </p>
                         <p className="text-sm">
-                          After Trade-in:{" "}
+                          {"After Trade-in:"}{" "}
                           <span className="text-2xl font-bold text-emerald-600">
                             ${finalPrice}
                           </span>
@@ -306,10 +299,8 @@ export default function OfferPage() {
             </section>
           </div>
 
-          {/* Right Column: CTA & Summary (Sticky) */}
           <aside className="lg:col-span-1 mt-12 lg:mt-0">
             <div className="lg:sticky lg:top-28 space-y-6">
-              {/* Trade-in Summary */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h3 className="text-lg font-bold text-slate-900">
                   Your Exclusive Trade-In Offer
@@ -335,7 +326,6 @@ export default function OfferPage() {
                 </p>
               </div>
 
-              {/* Final CTA */}
               <div className="bg-slate-900 text-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-bold">
                   Ready to Finalize Your Choice?
@@ -346,7 +336,7 @@ export default function OfferPage() {
                   measurements and answer all your questions.
                 </p>
                 <a
-                  href="tel:+17735551234"
+                  href="tel:+18472500221"
                   className="mt-5 block w-full text-center rounded-xl bg-blue-600 px-5 py-3.5 font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition"
                 >
                   Schedule Free Measure & Lock Price
@@ -363,7 +353,6 @@ export default function OfferPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
           <div>
@@ -371,7 +360,9 @@ export default function OfferPage() {
               Illinois Garage Door Repair Co.
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Proudly Serving Chicago & All Suburbs. Your neighbors trust us.
+              {
+                "Proudly Serving Chicago & All Suburbs. Your neighbors trust us."
+              }
             </p>
           </div>
           <p className="mt-4 text-sm text-slate-500 lg:mt-0">
