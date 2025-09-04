@@ -16,6 +16,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
+type GarageType = "1-car" | "2-car";
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
 const Spinner = () => (
@@ -55,7 +56,6 @@ const StarRating = ({ rating = 5 }: { rating?: number }) => (
   </div>
 );
 
-/** --- НОВОЕ, БОЛЕЕ СДЕРЖАННОЕ МОДАЛЬНОЕ ОКНО --- */
 function TipsModal({
   open,
   onClose,
@@ -103,13 +103,11 @@ function TipsModal({
                 A good photo helps us give you an accurate offer and a realistic
                 preview.
               </p>
-
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                {/* Левая колонка: один идеальный пример */}
                 <div className="space-y-3">
                   <div className="aspect-video w-full overflow-hidden rounded-xl border border-slate-200">
                     <Image
-                      src="/good-photo-example.png" // Убедитесь, что это изображение есть в вашей папке /public
+                      src="/good-photo-example.png"
                       alt="The perfect shot for a garage door"
                       width={1280}
                       height={720}
@@ -120,8 +118,6 @@ function TipsModal({
                     The Perfect Shot
                   </p>
                 </div>
-
-                {/* Правая колонка: список советов */}
                 <ul className="space-y-3 text-slate-700 text-sm">
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-5 w-5 mt-px flex-shrink-0 text-[#0E4A7B]" />
@@ -154,7 +150,6 @@ function TipsModal({
                 </ul>
               </div>
             </div>
-
             <div className="px-6 sm:px-8 py-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-4">
               <label className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
                 <input
@@ -198,11 +193,19 @@ export default function Home() {
         phone: savedPhone,
         email: savedEmail,
         doors: "1",
+        garageType: "1-car" as GarageType,
         material: "steel" as Material,
       };
     }
-    return { phone: "", email: "", doors: "1", material: "steel" as Material };
+    return {
+      phone: "",
+      email: "",
+      doors: "1",
+      garageType: "1-car" as GarageType,
+      material: "steel" as Material,
+    };
   });
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -322,6 +325,8 @@ export default function Home() {
 
   const handleDoorSelect = (doors: string) =>
     setFormData((p) => ({ ...p, doors }));
+  const handleGarageTypeSelect = (garageType: GarageType) =>
+    setFormData((p) => ({ ...p, garageType }));
   const handleMaterialSelect = (material: Material) =>
     setFormData((p) => ({ ...p, material }));
   const validatePhoneNumber = (phone: string) =>
@@ -378,7 +383,6 @@ export default function Home() {
         persist={dontShowAgain}
         onTogglePersist={handleTogglePersist}
       />
-
       <input
         ref={fileInputRef}
         type="file"
@@ -386,7 +390,6 @@ export default function Home() {
         accept="image/*"
         onChange={handleFileChange}
       />
-
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <Link
@@ -427,7 +430,19 @@ export default function Home() {
               <p className="mt-3 text-lg text-slate-600 font-medium">
                 ...with a purchase of a new door from us.
               </p>
-              <p className="mt-5 text-slate-600 text-lg">
+
+              {/* --- ИЗМЕНЕНИЕ: Добавлен контейнер для изображения --- */}
+              <div className="mt-6 relative shadow-xl rounded-2xl ring-1 ring-slate-200">
+                <Image
+                  src="/oldnewdoor.png"
+                  alt="Comparison of an old and new garage door"
+                  width={600}
+                  height={300}
+                  className="w-full h-auto object-cover rounded-2xl"
+                />
+              </div>
+
+              <p className="mt-6 text-slate-600 text-lg">
                 {
                   "Your old garage door is your down payment on a beautiful new one. Snap a photo to get an instant trade-in credit towards a complete upgrade, professionally installed by our team."
                 }
@@ -515,27 +530,57 @@ export default function Home() {
                         Tell Us About Your Old Door
                       </h3>
                     </div>
-                    <div>
-                      <label className="block text-base font-medium text-slate-800 mb-3">
-                        Number of Doors
-                      </label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {["1", "2", "3+"].map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => handleDoorSelect(d)}
-                            className={`text-center p-4 rounded-lg border-2 transition-all duration-200 ${
-                              formData.doors === d
-                                ? "border-[#0E4A7B] bg-blue-50  ring-[#0E4A7B]"
-                                : "border-slate-300 bg-white hover:border-slate-400"
-                            }`}
-                          >
-                            <div className="text-2xl font-bold text-slate-900">
-                              {d}
-                            </div>
-                          </button>
-                        ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-base font-medium text-slate-800 mb-3">
+                          Number of Doors
+                        </label>
+                        <div className="grid grid-cols-3 gap-3">
+                          {["1", "2", "3+"].map((d) => (
+                            <button
+                              key={d}
+                              type="button"
+                              onClick={() => handleDoorSelect(d)}
+                              className={`text-center py-3 rounded-lg border-2 transition-all duration-200 ${
+                                formData.doors === d
+                                  ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
+                                  : "border-slate-300 bg-white hover:border-slate-400"
+                              }`}
+                            >
+                              <div className="text-xl font-bold text-slate-900">
+                                {d}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-base font-medium text-slate-800 mb-3">
+                          Garage Type
+                        </label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {[
+                            { v: "1-car", l: "Single Car" },
+                            { v: "2-car", l: "Double Car" },
+                          ].map((g) => (
+                            <button
+                              key={g.v}
+                              type="button"
+                              onClick={() =>
+                                handleGarageTypeSelect(g.v as GarageType)
+                              }
+                              className={`text-center py-4 rounded-lg border-2 transition-all duration-200 ${
+                                formData.garageType === g.v
+                                  ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
+                                  : "border-slate-300 bg-white hover:border-slate-400"
+                              }`}
+                            >
+                              <div className="text-sm font-semibold text-slate-900">
+                                {g.l}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -558,7 +603,7 @@ export default function Home() {
                             }
                             className={`p-3 rounded-lg border-2 text-sm font-semibold text-slate-900 transition-all duration-200 ${
                               formData.material === m.v
-                                ? "border-[#0E4A7B] bg-blue-50  ring-[#0E4A7B]"
+                                ? "border-[#0E4A7B] bg-blue-50  ring-2 ring-blue-200"
                                 : "border-slate-300 bg-white hover:border-slate-400"
                             }`}
                           >
@@ -590,7 +635,7 @@ export default function Home() {
                           name="phone"
                           id="phone"
                           required
-                          className="block w-full bg-white border border-slate-300 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
+                          className="block w-full bg-white border border-slate-300 text-slate-800 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
                           placeholder="(555) 123-4567"
                           value={formData.phone}
                           onChange={handlePhoneChange}
@@ -610,7 +655,7 @@ export default function Home() {
                           name="email"
                           id="email"
                           required
-                          className="block w-full bg-white border border-slate-300 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
+                          className="block w-full bg-white border text-slate-800 border-slate-300 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
                           placeholder="you@example.com"
                           value={formData.email}
                           onChange={handleInputChange}
