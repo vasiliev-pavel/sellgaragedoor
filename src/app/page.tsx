@@ -1,9 +1,9 @@
-// src/app/page.tsx (ФИНАЛЬНАЯ ВЕРСИЯ С НОВЫМ ЗАГОЛОВКОМ)
+// src/app/page.tsx (FINAL with upload tips modal)
 
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -31,12 +31,12 @@ const Spinner = () => (
       r="10"
       stroke="currentColor"
       strokeWidth="4"
-    ></circle>
+    />
     <path
       className="opacity-75"
       fill="currentColor"
       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-    ></path>
+    />
   </svg>
 );
 
@@ -53,6 +53,180 @@ const StarRating = ({ rating = 5 }: { rating?: number }) => (
     ))}
   </div>
 );
+
+/** --- Tips Modal --- */
+function TipsModal({
+  open,
+  onClose,
+  onContinue,
+  onTogglePersist,
+  persist,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onContinue: () => void;
+  onTogglePersist: (v: boolean) => void;
+  persist: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+    >
+      <div
+        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/10 overflow-hidden">
+        <div className="px-6 sm:px-8 pt-6">
+          <h3 className="text-2xl font-bold text-slate-900">
+            How to Photograph Your Garage Door
+          </h3>
+          <p className="mt-1 text-slate-600">
+            Follow these quick tips so we can price your trade-in and visualize
+            new styles accurately.
+          </p>
+        </div>
+
+        {/* Simple wide-format SVG diagram */}
+        <div className="px-6 sm:px-8 mt-5">
+          <div className="rounded-xl border border-slate-200 overflow-hidden">
+            <svg
+              viewBox="0 0 960 500"
+              className="w-full h-auto block bg-slate-100"
+              aria-hidden="true"
+            >
+              {/* lawn */}
+              <rect x="0" y="370" width="960" height="130" fill="#cfe7cf" />
+              {/* house body */}
+              <rect x="210" y="150" width="540" height="220" fill="#d9d4cf" />
+              {/* roof */}
+              <polygon points="480,70 170,150 790,150" fill="#8b8f95" />
+              {/* door opening */}
+              <rect
+                x="340"
+                y="200"
+                width="280"
+                height="140"
+                fill="#f4f5f7"
+                stroke="#cbd5e1"
+              />
+              {/* panels */}
+              {Array.from({ length: 4 }).map((_, r) =>
+                Array.from({ length: 4 }).map((__, c) => (
+                  <rect
+                    key={`${r}-${c}`}
+                    x={350 + c * 65}
+                    y={210 + r * 33}
+                    width="55"
+                    height="23"
+                    fill="#ffffff"
+                    stroke="#e2e8f0"
+                  />
+                ))
+              )}
+              {/* recommended frame dotted */}
+              <rect
+                x="150"
+                y="95"
+                width="660"
+                height="320"
+                fill="none"
+                stroke="#0ea5e9"
+                strokeWidth="6"
+                strokeDasharray="10 12"
+                rx="6"
+              />
+              {/* phone silhouette */}
+              <rect
+                x="370"
+                y="380"
+                width="220"
+                height="90"
+                rx="12"
+                fill="#1f2937"
+              />
+              <rect
+                x="382"
+                y="392"
+                width="196"
+                height="66"
+                rx="6"
+                fill="#111827"
+              />
+              {/* tiny view on phone (door + dotted) */}
+              <rect x="420" y="405" width="120" height="42" fill="#e5e7eb" />
+              <rect
+                x="418"
+                y="403"
+                width="124"
+                height="46"
+                fill="none"
+                stroke="#93c5fd"
+                strokeWidth="3"
+                strokeDasharray="6 8"
+                rx="4"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Tips list */}
+        <div className="px-6 sm:px-8 mt-6 grid gap-3 text-slate-700">
+          <div>
+            • Hold your phone <b>horizontally</b> (landscape).
+          </div>
+          <div>
+            • Stand back about <b>15–25 ft</b> so the{" "}
+            <b>entire door + some wall and roof</b> fit in frame.
+          </div>
+          <div>
+            • Keep the door <b>centered</b>, camera at <b>eye level</b>; avoid
+            steep angles.
+          </div>
+          <div>
+            • Shoot in <b>daylight</b>; avoid heavy shadows, glare, or night
+            shots.
+          </div>
+          <div>
+            • <b>Close the door</b> and remove cars, bins, or people from the
+            view.
+          </div>
+        </div>
+
+        <div className="px-6 sm:px-8 pb-6 mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 justify-between">
+          <label className="inline-flex items-center gap-2 text-sm text-slate-600 select-none">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 text-[#0E4A7B] focus:ring-[#0E4A7B]"
+              checked={persist}
+              onChange={(e) => onTogglePersist(e.target.checked)}
+            />
+            Don’t show again
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onContinue}
+              className="px-4 py-2 rounded-lg text-white bg-[#0E4A7B] hover:brightness-110 shadow-md"
+            >
+              Continue to upload
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [formData, setFormData] = useState(() => {
@@ -72,9 +246,39 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Modal state
+  const [showTips, setShowTips] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
 
-  // --- Все ваши функции-обработчики остаются без изменений ---
+  useEffect(() => {
+    // read persisted preference
+    if (typeof window !== "undefined") {
+      setDontShowAgain(localStorage.getItem("garageTipsDismissed") === "1");
+    }
+  }, []);
+
+  const openUploadFlow = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    if (dontShowAgain) {
+      fileInputRef.current?.click();
+    } else {
+      setShowTips(true);
+    }
+  };
+
+  const continueToUpload = () => {
+    if (dontShowAgain) {
+      localStorage.setItem("garageTipsDismissed", "1");
+    }
+    setShowTips(false);
+    // let dialog settle
+    setTimeout(() => fileInputRef.current?.click(), 50);
+  };
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -83,6 +287,7 @@ export default function Home() {
     if (name === "phone") localStorage.setItem("garageFormPhone", value);
     if (name === "email") localStorage.setItem("garageFormEmail", value);
   };
+
   const formatPhoneNumber = (value: string) => {
     const phoneNumber = value.replace(/[^\d]/g, "");
     const len = phoneNumber.length;
@@ -93,11 +298,13 @@ export default function Home() {
       6
     )}-${phoneNumber.slice(6, 10)}`;
   };
+
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatPhoneNumber(e.target.value);
     setFormData((prev) => ({ ...prev, phone: formatted }));
     localStorage.setItem("garageFormPhone", formatted);
   };
+
   const compressImage = (file: File): Promise<File> =>
     new Promise((resolve) => {
       const img = document.createElement("img");
@@ -107,7 +314,7 @@ export default function Home() {
         const ctx = canvas.getContext("2d")!;
         const maxWidth = 1200,
           maxHeight = 1200;
-        let { width, height } = img;
+        let { width, height } = img as HTMLImageElement;
         if (width > height) {
           if (width > maxWidth) {
             height *= maxWidth / width;
@@ -134,6 +341,7 @@ export default function Home() {
       };
       img.onerror = () => resolve(file);
     });
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = await compressImage(e.target.files[0]);
@@ -142,17 +350,22 @@ export default function Home() {
       setPreviewUrl(URL.createObjectURL(file));
     }
   };
+
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
   const handleDoorSelect = (doors: string) =>
     setFormData((p) => ({ ...p, doors }));
+
   const handleMaterialSelect = (material: Material) =>
     setFormData((p) => ({ ...p, material }));
+
   const validatePhoneNumber = (phone: string) =>
     phone.replace(/[^\d]/g, "").length === 10;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
@@ -197,6 +410,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Modal */}
+      <TipsModal
+        open={showTips}
+        onClose={() => setShowTips(false)}
+        onContinue={continueToUpload}
+        persist={dontShowAgain}
+        onTogglePersist={(v) => setDontShowAgain(v)}
+      />
+
       <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
           <Link
@@ -218,7 +440,7 @@ export default function Home() {
             className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
           >
             <Phone size={16} />
-            <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
+            <span className="hidden sm:inline">Questions? Call Us:</span>
             <span className="font-bold">(847) 250-0221</span>
           </a>
         </div>
@@ -228,7 +450,6 @@ export default function Home() {
         <div className="mx-auto max-w-7xl">
           <div className="grid lg:grid-cols-5 gap-12 xl:gap-16 items-start">
             <section className="lg:col-span-2 lg:sticky lg:top-28">
-              {/* ИЗМЕНЕНИЕ: Новый заголовок и подзаголовок в соответствии с вашим запросом */}
               <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold leading-tight text-slate-900">
                 We Will{" "}
                 <span className="text-[#E86A2F]">
@@ -238,12 +459,10 @@ export default function Home() {
               <p className="mt-3 text-lg text-slate-600 font-medium">
                 ...with a purchase of a new door from us.
               </p>
-
-              {/* ИЗМЕНЕНИЕ: Основной текст переписан, чтобы соответствовать новому заголовку */}
               <p className="mt-5 text-slate-600 text-lg">
-                {
-                  "Your old garage door is your down payment on a beautiful new one. Snap a photo to get an instant trade-in credit towards a complete upgrade, professionally installed by our team."
-                }
+                Your old garage door is your down payment on a beautiful new
+                one. Snap a photo to get an instant trade-in credit towards a
+                complete upgrade, professionally installed by our team.
               </p>
 
               <div className="mt-8 space-y-4 text-slate-700">
@@ -286,10 +505,12 @@ export default function Home() {
                         Upload a Photo of Your Current Door
                       </h3>
                     </div>
+
                     {!previewUrl ? (
                       <div className="mt-2">
+                        {/* Click opens tips modal first */}
                         <label
-                          htmlFor="file-upload"
+                          onClick={openUploadFlow}
                           className="relative block w-full rounded-xl border-2 border-dashed border-slate-300 p-12 text-center hover:border-[#0E4A7B] cursor-pointer bg-slate-50/80 transition-colors"
                         >
                           <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
@@ -300,6 +521,7 @@ export default function Home() {
                             or drag and drop
                           </span>
                           <input
+                            ref={fileInputRef}
                             id="file-upload"
                             name="file-upload"
                             type="file"
@@ -319,20 +541,23 @@ export default function Home() {
                           height={400}
                           className="w-full h-auto object-cover"
                         />
-                        <label
-                          htmlFor="file-upload"
+                        <button
+                          type="button"
+                          onClick={openUploadFlow}
                           className="absolute bottom-4 left-1/2 -translate-x-1/2 cursor-pointer rounded-lg bg-white/80 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-slate-800 shadow-md ring-1 ring-slate-900/10 hover:bg-white transition"
                         >
                           Change Photo
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            className="sr-only"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                          />
-                        </label>
+                        </button>
+                        {/* Hidden input for programmatic click */}
+                        <input
+                          ref={fileInputRef}
+                          id="file-upload-change"
+                          name="file-upload-change"
+                          type="file"
+                          className="sr-only"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                        />
                       </div>
                     )}
                   </div>
@@ -459,8 +684,7 @@ export default function Home() {
                     >
                       {loading ? (
                         <>
-                          {" "}
-                          <Spinner /> Calculating Your Credit...{" "}
+                          <Spinner /> Calculating Your Credit...
                         </>
                       ) : (
                         "Get My Trade-In Offer"
@@ -484,11 +708,11 @@ export default function Home() {
                 Trusted by Homeowners Across Chicagoland
               </h2>
               <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
-                {
-                  "We're proud of our reputation for quality work and happy customers."
-                }
+                We're proud of our reputation for quality work and happy
+                customers.
               </p>
             </div>
+
             <div className="mt-16 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
@@ -497,9 +721,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    {
-                      "The entire process was seamless! From uploading a photo to the final installation, the team was professional and efficient. My new garage door looks amazing."
-                    }
+                    The entire process was seamless! From uploading a photo to
+                    the final installation, the team was professional and
+                    efficient. My new garage door looks amazing.
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -509,6 +733,7 @@ export default function Home() {
                   </span>
                 </footer>
               </div>
+
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-900">Mark P.</p>
@@ -516,9 +741,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    {
-                      "I was skeptical about the AI visualization, but it was surprisingly accurate and helped us choose the perfect style. The trade-in offer was fair. Highly recommend!"
-                    }
+                    I was skeptical about the AI visualization, but it was
+                    surprisingly accurate and helped us choose the perfect
+                    style. The trade-in offer was fair. Highly recommend!
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -528,6 +753,7 @@ export default function Home() {
                   </span>
                 </footer>
               </div>
+
               <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-slate-900">David Chen</p>
@@ -535,9 +761,9 @@ export default function Home() {
                 </div>
                 <blockquote className="mt-4 text-slate-700 italic">
                   <p>
-                    {
-                      "Great service and a fantastic deal. Getting a credit for our old, beat-up door was a huge plus. The installers were courteous and cleaned up everything."
-                    }
+                    Great service and a fantastic deal. Getting a credit for our
+                    old, beat-up door was a huge plus. The installers were
+                    courteous and cleaned up everything.
                   </p>
                 </blockquote>
                 <footer className="mt-4 text-sm text-slate-500">
@@ -548,6 +774,7 @@ export default function Home() {
                 </footer>
               </div>
             </div>
+
             <div className="mt-12 text-center">
               <a
                 href="https://www.google.com/search?q=illinois+garage+door+repair#reviews"
@@ -569,7 +796,7 @@ export default function Home() {
               Illinois Garage Door Repair Co.
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              {"Proudly Serving Chicago & All Suburbs."}
+              Proudly Serving Chicago & All Suburbs.
             </p>
           </div>
           <p className="mt-4 text-sm text-slate-500 lg:mt-0">
