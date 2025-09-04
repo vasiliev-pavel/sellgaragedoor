@@ -14,9 +14,10 @@ import {
   Phone,
   Lightbulb,
   CheckCircle,
+  Plus,
+  Minus,
 } from "lucide-react";
 
-type GarageType = "1-car" | "2-car";
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
 const Spinner = () => (
@@ -41,7 +42,6 @@ const Spinner = () => (
     ></path>
   </svg>
 );
-
 const StarRating = ({ rating = 5 }: { rating?: number }) => (
   <div className="flex items-center gap-0.5">
     {Array.from({ length: 5 }).map((_, i) => (
@@ -192,16 +192,17 @@ export default function Home() {
       return {
         phone: savedPhone,
         email: savedEmail,
-        doors: "1",
-        garageType: "1-car" as GarageType,
+        // ИЗМЕНЕНИЕ: Новая структура состояния для дверей
+        singleDoors: 1,
+        doubleDoors: 0,
         material: "steel" as Material,
       };
     }
     return {
       phone: "",
       email: "",
-      doors: "1",
-      garageType: "1-car" as GarageType,
+      singleDoors: 1,
+      doubleDoors: 0,
       material: "steel" as Material,
     };
   });
@@ -323,10 +324,30 @@ export default function Home() {
     };
   }, [previewUrl]);
 
-  const handleDoorSelect = (doors: string) =>
-    setFormData((p) => ({ ...p, doors }));
-  const handleGarageTypeSelect = (garageType: GarageType) =>
-    setFormData((p) => ({ ...p, garageType }));
+  // НОВЫЙ ОБРАБОТЧИК: Управление счетчиками
+  const handleDoorCountChange = (type: "single" | "double", amount: number) => {
+    setFormData((prev) => {
+      const currentSingle = prev.singleDoors;
+      const currentDouble = prev.doubleDoors;
+      let newSingle = currentSingle;
+      let newDouble = currentDouble;
+
+      if (type === "single") {
+        newSingle = Math.max(0, Math.min(5, currentSingle + amount)); // Ограничение от 0 до 5
+      } else {
+        newDouble = Math.max(0, Math.min(5, currentDouble + amount)); // Ограничение от 0 до 5
+      }
+
+      // Гарантируем, что хотя бы одна дверь выбрана, если пользователь пытается убрать последнюю
+      if (newSingle === 0 && newDouble === 0) {
+        if (currentSingle === 1 && currentDouble === 0) return prev; // Не даем убрать последнюю одинарную
+        if (currentSingle === 0 && currentDouble === 1) return prev; // Не даем убрать последнюю двойную
+      }
+
+      return { ...prev, singleDoors: newSingle, doubleDoors: newDouble };
+    });
+  };
+
   const handleMaterialSelect = (material: Material) =>
     setFormData((p) => ({ ...p, material }));
   const validatePhoneNumber = (phone: string) =>
@@ -430,8 +451,6 @@ export default function Home() {
               <p className="mt-3 text-lg text-slate-600 font-medium">
                 ...with a purchase of a new door from us.
               </p>
-
-              {/* --- ИЗМЕНЕНИЕ: Добавлен контейнер для изображения --- */}
               <div className="mt-6 relative shadow-xl rounded-2xl ring-1 ring-slate-200">
                 <Image
                   src="/oldnewdoor.png"
@@ -441,7 +460,6 @@ export default function Home() {
                   className="w-full h-auto object-cover rounded-2xl"
                 />
               </div>
-
               <p className="mt-6 text-slate-600 text-lg">
                 {
                   "Your old garage door is your down payment on a beautiful new one. Snap a photo to get an instant trade-in credit towards a complete upgrade, professionally installed by our team."
@@ -527,65 +545,80 @@ export default function Home() {
                         2
                       </div>
                       <h3 className="text-xl font-semibold text-slate-900">
-                        Tell Us About Your Old Door
+                        Tell Us About Your Old Door(s)
                       </h3>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-base font-medium text-slate-800 mb-3">
-                          Number of Doors
-                        </label>
-                        <div className="grid grid-cols-3 gap-3">
-                          {["1", "2", "3+"].map((d) => (
+
+                    {/* --- ИЗМЕНЕНИЕ: НОВЫЙ БЛОК СО СЧЕТЧИКАМИ --- */}
+                    <div>
+                      <label className="block text-base font-medium text-slate-800 mb-3">
+                        Garage Door Setup
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Счетчик для одинарных дверей */}
+                        <div className="bg-white rounded-lg border border-slate-300 p-3 flex items-center border-2 justify-between">
+                          <span className="font-semibold text-slate-700">
+                            Single Car Doors
+                          </span>
+                          <div className="flex items-center gap-2">
                             <button
-                              key={d}
-                              type="button"
-                              onClick={() => handleDoorSelect(d)}
-                              className={`text-center py-3 rounded-lg border-2 transition-all duration-200 ${
-                                formData.doors === d
-                                  ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
-                                  : "border-slate-300 bg-white hover:border-slate-400"
-                              }`}
-                            >
-                              <div className="text-xl font-bold text-slate-900">
-                                {d}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-base font-medium text-slate-800 mb-3">
-                          Garage Type
-                        </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          {[
-                            { v: "1-car", l: "Single Car" },
-                            { v: "2-car", l: "Double Car" },
-                          ].map((g) => (
-                            <button
-                              key={g.v}
                               type="button"
                               onClick={() =>
-                                handleGarageTypeSelect(g.v as GarageType)
+                                handleDoorCountChange("single", -1)
                               }
-                              className={`text-center py-4 rounded-lg border-2 transition-all duration-200 ${
-                                formData.garageType === g.v
-                                  ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
-                                  : "border-slate-300 bg-white hover:border-slate-400"
-                              }`}
+                              disabled={formData.singleDoors <= 0}
+                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
                             >
-                              <div className="text-sm font-semibold text-slate-900">
-                                {g.l}
-                              </div>
+                              <Minus size={16} className="mx-auto" />
                             </button>
-                          ))}
+                            <span className="text-lg font-bold text-slate-900 w-8 text-center">
+                              {formData.singleDoors}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDoorCountChange("single", 1)}
+                              disabled={formData.singleDoors >= 5}
+                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                            >
+                              <Plus size={16} className="mx-auto" />
+                            </button>
+                          </div>
+                        </div>
+                        {/* Счетчик для двойных дверей */}
+                        <div className="bg-white rounded-lg  border-slate-300 p-3 flex items-center justify-between border-2">
+                          <span className="font-semibold text-slate-700">
+                            Double Car Doors
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDoorCountChange("double", -1)
+                              }
+                              disabled={formData.doubleDoors <= 0}
+                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                            >
+                              <Minus size={16} className="mx-auto" />
+                            </button>
+                            <span className="text-lg font-bold text-slate-900 w-8 text-center">
+                              {formData.doubleDoors}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleDoorCountChange("double", 1)}
+                              disabled={formData.doubleDoors >= 5}
+                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                            >
+                              <Plus size={16} className="mx-auto" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
+
                     <div>
                       <label className="block text-base font-medium text-slate-800 mb-3">
-                        Material of Your Old Door{" "}
+                        Material of Your Old Door(s){" "}
                         <span className="text-[#E86A2F]">*</span>
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -603,7 +636,7 @@ export default function Home() {
                             }
                             className={`p-3 rounded-lg border-2 text-sm font-semibold text-slate-900 transition-all duration-200 ${
                               formData.material === m.v
-                                ? "border-[#0E4A7B] bg-blue-50  ring-2 ring-blue-200"
+                                ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
                                 : "border-slate-300 bg-white hover:border-slate-400"
                             }`}
                           >
@@ -666,7 +699,11 @@ export default function Home() {
                   <div className="pt-4">
                     <button
                       type="submit"
-                      disabled={loading}
+                      disabled={
+                        loading ||
+                        (formData.singleDoors === 0 &&
+                          formData.doubleDoors === 0)
+                      }
                       className="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-lg font-semibold text-white bg-[#E86A2F] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E86A2F] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
                     >
                       {loading ? (

@@ -10,10 +10,12 @@ import { Mail, Phone, Check, AlertTriangle, Eye, Sparkles } from "lucide-react";
 // --- ТИПЫ И ДАННЫЕ ---
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
+// ИЗМЕНЕНИЕ: Обновлен интерфейс для соответствия данным из формы
 interface UserIntake {
   phone: string;
   email: string;
-  doors: string;
+  singleDoors: number;
+  doubleDoors: number;
   material: Material;
 }
 
@@ -79,10 +81,17 @@ const DOOR_CATALOG: DoorOption[] = [
   },
 ];
 
-function computeTradeInCredit(doors: string, material: Material): number {
-  const count = Math.max(1, parseInt(doors || "1", 10));
-  const perDoorCredit = material === "wood" ? 75 : 120;
-  return perDoorCredit * count;
+// ИЗМЕНЕНИЕ: Новая функция для расчета скидки
+function computeTradeInCredit(
+  singleDoors: number,
+  doubleDoors: number,
+  material: Material
+): number {
+  const singleDoorCredit = material === "wood" ? 75 : 120;
+  const doubleDoorCredit = material === "wood" ? 130 : 200;
+  const totalSingleCredit = singleDoors * singleDoorCredit;
+  const totalDoubleCredit = doubleDoors * doubleDoorCredit;
+  return totalSingleCredit + totalDoubleCredit;
 }
 
 export default function OfferPage() {
@@ -105,6 +114,18 @@ export default function OfferPage() {
     }
     try {
       const parsedData = JSON.parse(savedData) as PagePayload;
+
+      // ИЗМЕНЕНИЕ: Преобразуем строковые значения в числа после получения из sessionStorage
+      if (parsedData.intake) {
+        parsedData.intake.singleDoors = parseInt(
+          String((parsedData.intake as any).singleDoors || 0),
+          10
+        );
+        parsedData.intake.doubleDoors = parseInt(
+          String((parsedData.intake as any).doubleDoors || 0),
+          10
+        );
+      }
       setPayload(parsedData);
 
       if (parsedData.generatedImage) {
@@ -114,21 +135,18 @@ export default function OfferPage() {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
           if (!ctx) return;
-
           const w = img.width,
             h = img.height,
             halfW = w / 2,
             halfH = h / 2;
           canvas.width = halfW;
           canvas.height = halfH;
-
           const quadrants = [
-            { x: 0, y: 0 }, // A
-            { x: halfW, y: 0 }, // B
-            { x: 0, y: halfH }, // C
-            { x: halfW, y: halfH }, // D
+            { x: 0, y: 0 },
+            { x: halfW, y: 0 },
+            { x: 0, y: halfH },
+            { x: halfW, y: halfH },
           ];
-
           const imagesDataUrls = quadrants.map((q) => {
             ctx.clearRect(0, 0, halfW, halfH);
             ctx.drawImage(img, q.x, q.y, halfW, halfH, 0, 0, halfW, halfH);
@@ -144,16 +162,20 @@ export default function OfferPage() {
 
   const intake = payload?.intake;
 
+  // ИЗМЕНЕНИЕ: Вызов функции теперь корректен и не вызовет ошибку
   const tradeInCredit = useMemo(() => {
     if (!intake) return 0;
-    return computeTradeInCredit(intake.doors, intake.material);
+    return computeTradeInCredit(
+      intake.singleDoors,
+      intake.doubleDoors,
+      intake.material
+    );
   }, [intake]);
 
   const selectedDoor = useMemo(
     () => DOOR_CATALOG.find((d) => d.imageLabel === selectedStyle),
     [selectedStyle]
   );
-
   const activeAfterImage = useMemo(() => {
     const styleIndex = ["A", "B", "C", "D"].indexOf(selectedStyle);
     return splitImages.length > styleIndex ? splitImages[styleIndex] : null;
@@ -163,7 +185,13 @@ export default function OfferPage() {
     option.basePrice + option.installPrice;
 
   const handleConfirmOffer = async () => {
-    if (!payload?.intake || !selectedDoor) return;
+    if (
+      !payload?.intake ||
+      !selectedDoor ||
+      !activeAfterImage ||
+      !payload.originalImage
+    )
+      return;
     setEmailStatus("sending");
     try {
       const response = await fetch("/api/confirm-offer", {
@@ -173,6 +201,8 @@ export default function OfferPage() {
           userInfo: payload.intake,
           selectedDoor: selectedDoor,
           tradeInCredit: tradeInCredit,
+          originalImage: payload.originalImage,
+          selectedDesignImage: activeAfterImage.split(",")[1],
           generatedImage: payload.generatedImage,
         }),
       });
@@ -186,7 +216,6 @@ export default function OfferPage() {
   const ConfirmButton = ({ isMobile = false }: { isMobile?: boolean }) => {
     const baseClasses =
       "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-3 font-semibold text-white shadow-sm transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
-
     switch (emailStatus) {
       case "sending":
         return (
@@ -242,6 +271,25 @@ export default function OfferPage() {
     );
   }
 
+  // Новая функция для форматирования текста о дверях
+  const formatDoorDescription = (
+    single: number,
+    double: number,
+    material: string
+  ) => {
+    const parts = [];
+    if (single > 0) {
+      parts.push(`${single} single ${material} door${single > 1 ? "s" : ""}`);
+    }
+    if (double > 0) {
+      parts.push(`${double} double ${material} door${double > 1 ? "s" : ""}`);
+    }
+    if (parts.length === 0) {
+      return `For your old ${material} door(s).`;
+    }
+    return `For your ${parts.join(" and ")}.`;
+  };
+
   const finalPriceForSelected = Math.max(
     0,
     getFullPrice(selectedDoor) - tradeInCredit
@@ -289,7 +337,6 @@ export default function OfferPage() {
                 }
               </p>
             </section>
-
             <section className="space-y-4">
               <div className="flex justify-center">
                 <button
@@ -306,7 +353,6 @@ export default function OfferPage() {
                   </span>
                 </button>
               </div>
-
               <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden ring-1 ring-slate-200">
                 <AnimatePresence initial={false}>
                   {isShowingOriginal ? (
@@ -353,9 +399,7 @@ export default function OfferPage() {
                 </AnimatePresence>
               </div>
             </section>
-
             <section>
-              {/* ИСПРАВЛЕНИЕ: Обернуто в {} для избежания ошибки */}
               <h2 className="text-2xl font-bold tracking-tight">
                 {'Select a Style to Update "After" Preview'}
               </h2>
@@ -417,7 +461,6 @@ export default function OfferPage() {
               </div>
             </section>
           </div>
-
           <aside className="hidden lg:block lg:col-span-1 mt-12 lg:mt-0">
             <div className="lg:sticky lg:top-28 space-y-6">
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
@@ -425,11 +468,11 @@ export default function OfferPage() {
                   Your Exclusive Trade-In Offer
                 </h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  For your {intake.doors} old{" "}
-                  <span className="font-medium capitalize">
-                    {intake.material.replace("_", " ")}
-                  </span>{" "}
-                  door(s).
+                  {formatDoorDescription(
+                    intake.singleDoors,
+                    intake.doubleDoors,
+                    intake.material
+                  )}
                 </p>
                 <div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-center">
                   <p className="text-sm font-medium text-emerald-800">
@@ -472,7 +515,6 @@ export default function OfferPage() {
           </aside>
         </div>
       </div>
-
       <AnimatePresence>
         {selectedDoor && (
           <motion.div
@@ -501,7 +543,6 @@ export default function OfferPage() {
           </motion.div>
         )}
       </AnimatePresence>
-
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
           <div>
