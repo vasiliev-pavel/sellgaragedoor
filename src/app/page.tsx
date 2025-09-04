@@ -556,7 +556,7 @@ export default function Home() {
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Счетчик для одинарных дверей */}
-                        <div className="bg-white rounded-lg border border-slate-300 p-3 flex items-center border-2 justify-between">
+                        <div className="bg-white rounded-lg  border-slate-300 p-3 flex items-center border-2 justify-between">
                           <span className="font-semibold text-slate-700">
                             Single Car Doors
                           </span>

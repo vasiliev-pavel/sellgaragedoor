@@ -7,10 +7,8 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { Mail, Phone, Check, AlertTriangle, Eye, Sparkles } from "lucide-react";
 
-// --- ТИПЫ И ДАННЫЕ ---
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
 
-// ИЗМЕНЕНИЕ: Обновлен интерфейс для соответствия данным из формы
 interface UserIntake {
   phone: string;
   email: string;
@@ -81,7 +79,6 @@ const DOOR_CATALOG: DoorOption[] = [
   },
 ];
 
-// ИЗМЕНЕНИЕ: Новая функция для расчета скидки
 function computeTradeInCredit(
   singleDoors: number,
   doubleDoors: number,
@@ -113,47 +110,64 @@ export default function OfferPage() {
       return;
     }
     try {
-      const parsedData = JSON.parse(savedData) as PagePayload;
+      // ИСПРАВЛЕНИЕ: Используем `unknown` и проверку типа, чтобы избежать `any`
+      const parsedData: unknown = JSON.parse(savedData);
 
-      // ИЗМЕНЕНИЕ: Преобразуем строковые значения в числа после получения из sessionStorage
-      if (parsedData.intake) {
-        parsedData.intake.singleDoors = parseInt(
-          String((parsedData.intake as any).singleDoors || 0),
-          10
-        );
-        parsedData.intake.doubleDoors = parseInt(
-          String((parsedData.intake as any).doubleDoors || 0),
-          10
-        );
-      }
-      setPayload(parsedData);
+      if (
+        typeof parsedData === "object" &&
+        parsedData !== null &&
+        "intake" in parsedData &&
+        "generatedImage" in parsedData
+      ) {
+        const data = parsedData as PagePayload;
 
-      if (parsedData.generatedImage) {
-        const img = new window.Image();
-        img.src = `data:image/png;base64,${parsedData.generatedImage}`;
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-          const w = img.width,
-            h = img.height,
-            halfW = w / 2,
-            halfH = h / 2;
-          canvas.width = halfW;
-          canvas.height = halfH;
-          const quadrants = [
-            { x: 0, y: 0 },
-            { x: halfW, y: 0 },
-            { x: 0, y: halfH },
-            { x: halfW, y: halfH },
-          ];
-          const imagesDataUrls = quadrants.map((q) => {
-            ctx.clearRect(0, 0, halfW, halfH);
-            ctx.drawImage(img, q.x, q.y, halfW, halfH, 0, 0, halfW, halfH);
-            return canvas.toDataURL();
-          });
-          setSplitImages(imagesDataUrls);
-        };
+        if (data.intake) {
+          // ИСПРАВЛЕНИЕ: Безопасное приведение типов
+          const intakeData = data.intake as unknown as Record<
+            string,
+            string | number
+          >;
+          data.intake.singleDoors = parseInt(
+            String(intakeData.singleDoors || 0),
+            10
+          );
+          data.intake.doubleDoors = parseInt(
+            String(intakeData.doubleDoors || 0),
+            10
+          );
+        }
+
+        setPayload(data);
+
+        if (data.generatedImage) {
+          const img = new window.Image();
+          img.src = `data:image/png;base64,${data.generatedImage}`;
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return;
+            const w = img.width,
+              h = img.height,
+              halfW = w / 2,
+              halfH = h / 2;
+            canvas.width = halfW;
+            canvas.height = halfH;
+            const quadrants = [
+              { x: 0, y: 0 },
+              { x: halfW, y: 0 },
+              { x: 0, y: halfH },
+              { x: halfW, y: halfH },
+            ];
+            const imagesDataUrls = quadrants.map((q) => {
+              ctx.clearRect(0, 0, halfW, halfH);
+              ctx.drawImage(img, q.x, q.y, halfW, halfH, 0, 0, halfW, halfH);
+              return canvas.toDataURL();
+            });
+            setSplitImages(imagesDataUrls);
+          };
+        }
+      } else {
+        throw new Error("Invalid data structure in sessionStorage");
       }
     } catch {
       router.push("/");
@@ -162,7 +176,6 @@ export default function OfferPage() {
 
   const intake = payload?.intake;
 
-  // ИЗМЕНЕНИЕ: Вызов функции теперь корректен и не вызовет ошибку
   const tradeInCredit = useMemo(() => {
     if (!intake) return 0;
     return computeTradeInCredit(
@@ -271,11 +284,10 @@ export default function OfferPage() {
     );
   }
 
-  // Новая функция для форматирования текста о дверях
   const formatDoorDescription = (
     single: number,
     double: number,
-    material: string
+    material: Material
   ) => {
     const parts = [];
     if (single > 0) {
