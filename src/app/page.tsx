@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -11,18 +10,10 @@ import {
   Wrench,
   UploadCloud,
   Star,
-  Phone,
   Lightbulb,
   CheckCircle,
   Plus,
   Minus,
-  MapPin,
-  CalendarDays,
-  PhoneCall,
-  Facebook,
-  Twitter,
-  Instagram,
-  Youtube,
 } from "lucide-react";
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
@@ -672,7 +663,7 @@ export default function Home() {
                 Trusted by Homeowners Across Chicagoland
               </h2>
               <p className="mt-5 max-w-2xl mx-auto text-lg text-slate-600">
-                We're proud of our reputation for quality work and happy
+                We&apos;re proud of our reputation for quality work and happy
                 customers.
               </p>
             </div>
