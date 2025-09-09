@@ -309,33 +309,6 @@ export default function OfferPage() {
 
   return (
     <main className="bg-gradient-to-b from-slate-50 via-white to-slate-100 text-slate-900 min-h-screen pb-40 lg:pb-0">
-      <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label="Illinois Garage Door Repair — home"
-            className="flex items-center"
-          >
-            <Image
-              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
-              alt="Illinois Garage Door Repair Chicago logo"
-              width={350}
-              height={171}
-              priority
-              className="h-14 w-auto"
-            />
-          </Link>
-          <a
-            href="tel:+18472500221"
-            className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
-          >
-            <Phone size={16} />
-            <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
-            <span className="font-bold">(847) 250-0221</span>
-          </a>
-        </div>
-      </header>
-
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="lg:grid lg:grid-cols-3 lg:gap-12">
           <div className="lg:col-span-2 space-y-8">
@@ -555,23 +528,6 @@ export default function OfferPage() {
           </motion.div>
         )}
       </AnimatePresence>
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold">
-              Illinois Garage Door Repair Co.
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              {
-                "Proudly Serving Chicago & All Suburbs. Your neighbors trust us."
-              }
-            </p>
-          </div>
-          <p className="mt-4 text-sm text-slate-500 lg:mt-0">
-            © {new Date().getFullYear()} All Rights Reserved.
-          </p>
-        </div>
-      </footer>
     </main>
   );
 }

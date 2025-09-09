@@ -16,6 +16,13 @@ import {
   CheckCircle,
   Plus,
   Minus,
+  MapPin,
+  CalendarDays,
+  PhoneCall,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
 } from "lucide-react";
 
 type Material = "steel" | "wood" | "aluminum" | "fiberglass_composite";
@@ -192,7 +199,6 @@ export default function Home() {
       return {
         phone: savedPhone,
         email: savedEmail,
-        // ИЗМЕНЕНИЕ: Новая структура состояния для дверей
         singleDoors: 1,
         doubleDoors: 0,
         material: "steel" as Material,
@@ -324,7 +330,6 @@ export default function Home() {
     };
   }, [previewUrl]);
 
-  // НОВЫЙ ОБРАБОТЧИК: Управление счетчиками
   const handleDoorCountChange = (type: "single" | "double", amount: number) => {
     setFormData((prev) => {
       const currentSingle = prev.singleDoors;
@@ -333,15 +338,14 @@ export default function Home() {
       let newDouble = currentDouble;
 
       if (type === "single") {
-        newSingle = Math.max(0, Math.min(5, currentSingle + amount)); // Ограничение от 0 до 5
+        newSingle = Math.max(0, Math.min(5, currentSingle + amount));
       } else {
-        newDouble = Math.max(0, Math.min(5, currentDouble + amount)); // Ограничение от 0 до 5
+        newDouble = Math.max(0, Math.min(5, currentDouble + amount));
       }
 
-      // Гарантируем, что хотя бы одна дверь выбрана, если пользователь пытается убрать последнюю
       if (newSingle === 0 && newDouble === 0) {
-        if (currentSingle === 1 && currentDouble === 0) return prev; // Не даем убрать последнюю одинарную
-        if (currentSingle === 0 && currentDouble === 1) return prev; // Не даем убрать последнюю двойную
+        if (currentSingle === 1 && currentDouble === 0) return prev;
+        if (currentSingle === 0 && currentDouble === 1) return prev;
       }
 
       return { ...prev, singleDoors: newSingle, doubleDoors: newDouble };
@@ -396,7 +400,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#F3F3F3]">
       <TipsModal
         open={showTips}
         onClose={() => setShowTips(false)}
@@ -411,37 +415,11 @@ export default function Home() {
         accept="image/*"
         onChange={handleFileChange}
       />
-      <header className="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-50">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <Link
-            href="/"
-            aria-label="Illinois Garage Door Repair — home"
-            className="flex items-center"
-          >
-            <Image
-              src="https://illinoisgaragedoorrepair.com/images/logo-new-illinois-garage-door-repair-company-lake-cook-county-il350x171.webp"
-              alt="Illinois Garage Door Repair Chicago logo"
-              width={350}
-              height={171}
-              priority
-              className="h-14 w-auto"
-            />
-          </Link>
-          <a
-            href="tel:+18472500221"
-            className="text-sm font-semibold text-slate-800 hover:text-blue-700 flex items-center gap-2"
-          >
-            <Phone size={16} />
-            <span className="hidden sm:inline">{"Questions? Call Us:"}</span>
-            <span className="font-bold">(847) 250-0221</span>
-          </a>
-        </div>
-      </header>
 
-      <main className="px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+      <main className="px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <div className="mx-auto max-w-7xl">
-          <div className="grid lg:grid-cols-5 gap-12 xl:gap-16 items-start">
-            <section className="lg:col-span-2 lg:sticky lg:top-28">
+          <div className="grid lg:grid-cols-2 gap-16 xl:gap-24 items-start">
+            <section className="lg:sticky lg:top-28">
               <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold leading-tight text-slate-900">
                 We Will{" "}
                 <span className="text-[#E86A2F]">
@@ -492,28 +470,30 @@ export default function Home() {
                 </div>
               </div>
             </section>
-            <section className="lg:col-span-3">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-2xl ring-1 ring-slate-900/5 p-6 sm:p-8">
+            <section>
+              <div className="bg-white rounded-3xl shadow-2xl p-8">
                 <form onSubmit={handleSubmit} className="space-y-8">
                   <div>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="grid h-8 w-8 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
-                        1
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-900">
-                        Upload a Photo of Your Current Door
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        Get Your Offer
                       </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-8 bg-[#E86A2F] rounded-full"></div>
+                        <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
+                        <div className="h-2 w-2 bg-slate-300 rounded-full"></div>
+                      </div>
                     </div>
                     {!previewUrl ? (
                       <div className="mt-2">
                         <button
                           type="button"
                           onClick={handleUploadClick}
-                          className="relative block w-full rounded-xl border-2 border-dashed border-slate-300 p-12 text-center hover:border-[#0E4A7B] bg-slate-50/80 transition-colors"
+                          className="relative block w-full rounded-2xl border-2 border-dashed border-slate-300 p-10 text-center hover:border-[#E86A2F] bg-slate-50 transition-colors"
                         >
-                          <UploadCloud className="mx-auto h-12 w-12 text-slate-400" />
-                          <span className="mt-2 block font-semibold text-[#0E4A7B]">
-                            Click to upload a photo
+                          <UploadCloud className="mx-auto h-10 w-10 text-slate-400" />
+                          <span className="mt-3 block font-semibold text-slate-700">
+                            Upload a Photo
                           </span>
                           <span className="mt-1 block text-xs text-slate-500">
                             or drag and drop
@@ -521,7 +501,7 @@ export default function Home() {
                         </button>
                       </div>
                     ) : (
-                      <div className="relative rounded-xl overflow-hidden ring-1 ring-slate-200">
+                      <div className="relative rounded-2xl overflow-hidden ring-1 ring-slate-200">
                         <Image
                           src={previewUrl}
                           alt="Your garage preview"
@@ -532,33 +512,22 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={handleUploadClick}
-                          className="absolute bottom-4 left-1/2 -translate-x-1/2 cursor-pointer rounded-lg bg-white/80 backdrop-blur-sm px-4 py-2 text-sm font-semibold text-slate-800 shadow-md ring-1 ring-slate-900/10 hover:bg-white transition"
+                          className="absolute bottom-4 left-1/2 -translate-x-1/2 cursor-pointer rounded-full bg-white/80 backdrop-blur-sm px-5 py-2 text-sm font-semibold text-slate-800 shadow-lg ring-1 ring-slate-900/10 hover:bg-white transition"
                         >
                           Change Photo
                         </button>
                       </div>
                     )}
                   </div>
-                  <div className="space-y-8">
-                    <div className="flex items-center gap-4">
-                      <div className="grid h-8 w-8 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
-                        2
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-900">
-                        Tell Us About Your Old Door(s)
-                      </h3>
-                    </div>
-
-                    {/* --- ИЗМЕНЕНИЕ: НОВЫЙ БЛОК СО СЧЕТЧИКАМИ --- */}
+                  <div className="space-y-6">
                     <div>
-                      <label className="block text-base font-medium text-slate-800 mb-3">
+                      <label className="block text-sm font-medium text-slate-600 mb-3">
                         Garage Door Setup
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Счетчик для одинарных дверей */}
-                        <div className="bg-white rounded-lg  border-slate-300 p-3 flex items-center border-2 justify-between">
-                          <span className="font-semibold text-slate-700">
-                            Single Car Doors
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-slate-100 rounded-xl p-3 flex items-center justify-between">
+                          <span className="font-semibold text-slate-700 text-sm">
+                            Single
                           </span>
                           <div className="flex items-center gap-2">
                             <button
@@ -567,27 +536,26 @@ export default function Home() {
                                 handleDoorCountChange("single", -1)
                               }
                               disabled={formData.singleDoors <= 0}
-                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                              className="h-6 w-6 rounded-full bg-white text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition"
                             >
-                              <Minus size={16} className="mx-auto" />
+                              <Minus size={14} className="mx-auto" />
                             </button>
-                            <span className="text-lg font-bold text-slate-900 w-8 text-center">
+                            <span className="font-bold text-slate-900 w-5 text-center">
                               {formData.singleDoors}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDoorCountChange("single", 1)}
                               disabled={formData.singleDoors >= 5}
-                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                              className="h-6 w-6 rounded-full bg-white text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition"
                             >
-                              <Plus size={16} className="mx-auto" />
+                              <Plus size={14} className="mx-auto" />
                             </button>
                           </div>
                         </div>
-                        {/* Счетчик для двойных дверей */}
-                        <div className="bg-white rounded-lg  border-slate-300 p-3 flex items-center justify-between border-2">
-                          <span className="font-semibold text-slate-700">
-                            Double Car Doors
+                        <div className="bg-slate-100 rounded-xl p-3 flex items-center justify-between">
+                          <span className="font-semibold text-slate-700 text-sm">
+                            Double
                           </span>
                           <div className="flex items-center gap-2">
                             <button
@@ -596,20 +564,20 @@ export default function Home() {
                                 handleDoorCountChange("double", -1)
                               }
                               disabled={formData.doubleDoors <= 0}
-                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                              className="h-6 w-6 rounded-full bg-white text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition"
                             >
-                              <Minus size={16} className="mx-auto" />
+                              <Minus size={14} className="mx-auto" />
                             </button>
-                            <span className="text-lg font-bold text-slate-900 w-8 text-center">
+                            <span className="font-bold text-slate-900 w-5 text-center">
                               {formData.doubleDoors}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDoorCountChange("double", 1)}
                               disabled={formData.doubleDoors >= 5}
-                              className="h-7 w-7 rounded-full bg-slate-200 text-slate-600 hover:bg-slate-300 disabled:opacity-50 transition"
+                              className="h-6 w-6 rounded-full bg-white text-slate-600 hover:bg-slate-200 disabled:opacity-50 transition"
                             >
-                              <Plus size={16} className="mx-auto" />
+                              <Plus size={14} className="mx-auto" />
                             </button>
                           </div>
                         </div>
@@ -617,9 +585,8 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <label className="block text-base font-medium text-slate-800 mb-3">
-                        Material of Your Old Door(s){" "}
-                        <span className="text-[#E86A2F]">*</span>
+                      <label className="block text-sm font-medium text-slate-600 mb-3">
+                        Material of Old Door(s)
                       </label>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
@@ -634,10 +601,10 @@ export default function Home() {
                             onClick={() =>
                               handleMaterialSelect(m.v as Material)
                             }
-                            className={`p-3 rounded-lg border-2 text-sm font-semibold text-slate-900 transition-all duration-200 ${
+                            className={`p-3 rounded-xl border-2 text-center text-sm font-semibold text-slate-900 transition-all duration-200 ${
                               formData.material === m.v
-                                ? "border-[#0E4A7B] bg-blue-50 ring-2 ring-blue-200"
-                                : "border-slate-300 bg-white hover:border-slate-400"
+                                ? "border-transparent bg-[#E86A2F] text-white shadow-md"
+                                : "border-slate-200 bg-white hover:border-slate-300"
                             }`}
                           >
                             {m.l}
@@ -646,57 +613,30 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="grid h-8 w-8 place-items-center rounded-full bg-[#0E4A7B] text-white font-bold">
-                        3
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-900">
-                        Where to Send Your Trade-In Offer
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <label
-                          htmlFor="phone"
-                          className="block text-sm font-semibold text-slate-800 mb-2"
-                        >
-                          Phone Number <span className="text-[#E86A2F]">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          name="phone"
-                          id="phone"
-                          required
-                          className="block w-full bg-white border border-slate-300 text-slate-800 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
-                          placeholder="(555) 123-4567"
-                          value={formData.phone}
-                          onChange={handlePhoneChange}
-                          maxLength={14}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="email"
-                          className="block text-sm font-semibold text-slate-800 mb-2"
-                        >
-                          Email Address{" "}
-                          <span className="text-[#E86A2F]">*</span>
-                        </label>
-                        <input
-                          type="email"
-                          name="email"
-                          id="email"
-                          required
-                          className="block w-full bg-white border text-slate-800 border-slate-300 rounded-lg px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#0E4A7B] focus:border-transparent transition-all"
-                          placeholder="you@example.com"
-                          value={formData.email}
-                          onChange={handleInputChange}
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-4">
+                    <input
+                      type="tel"
+                      name="phone"
+                      id="phone"
+                      required
+                      className="block w-full bg-slate-100 border-transparent text-slate-800 rounded-xl px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#E86A2F] transition-all"
+                      placeholder="Phone Number *"
+                      value={formData.phone}
+                      onChange={handlePhoneChange}
+                      maxLength={14}
+                    />
+                    <input
+                      type="email"
+                      name="email"
+                      id="email"
+                      required
+                      className="block w-full bg-slate-100 border-transparent text-slate-800 rounded-xl px-4 py-3 placeholder-slate-400 focus:ring-2 focus:ring-[#E86A2F] transition-all"
+                      placeholder="Email Address *"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                    />
                   </div>
-                  <div className="pt-4">
+                  <div>
                     <button
                       type="submit"
                       disabled={
@@ -704,20 +644,19 @@ export default function Home() {
                         (formData.singleDoors === 0 &&
                           formData.doubleDoors === 0)
                       }
-                      className="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-lg font-semibold text-white bg-[#E86A2F] hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#E86A2F] disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+                      className="w-full flex justify-center items-center gap-3 py-4 px-6 rounded-xl text-lg font-semibold text-white bg-[#1A1A1A] hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-60 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
                     >
                       {loading ? (
                         <>
                           {" "}
-                          <Spinner /> Calculating Your Credit...{" "}
+                          <Spinner /> Calculating...{" "}
                         </>
                       ) : (
-                        "Get My Trade-In Offer"
+                        "Get My Offer"
                       )}
                     </button>
-                    <p className="mt-4 text-xs text-center text-slate-500">
-                      By submitting, you agree to receive texts & emails about
-                      your offer.
+                    <p className="mt-3 text-xs text-center text-slate-500">
+                      By submitting, you agree to our terms & conditions.
                     </p>
                   </div>
                 </form>
@@ -726,83 +665,69 @@ export default function Home() {
           </div>
         </div>
 
-        <section className="py-16 sm:py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+        <section className="py-24 sm:py-32">
+          <div className="mx-auto max-w-7xl">
+            <div className="text-center max-w-3xl mx-auto">
+              <h2 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
                 Trusted by Homeowners Across Chicagoland
               </h2>
-              <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600">
-                {
-                  "We're proud of our reputation for quality work and happy customers."
-                }
+              <p className="mt-5 max-w-2xl mx-auto text-lg text-slate-600">
+                We're proud of our reputation for quality work and happy
+                customers.
               </p>
             </div>
-            <div className="mt-16 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-slate-900">Sarah L.</p>
-                  <StarRating rating={5} />
+            <div className="mt-20 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  name: "Sarah L.",
+                  rating: 5,
+                  quote:
+                    "The entire process was seamless! From uploading a photo to the final installation, the team was professional and efficient. My new garage door looks amazing.",
+                  location: "Naperville, IL",
+                },
+                {
+                  name: "Mark P.",
+                  rating: 5,
+                  quote:
+                    "I was skeptical about the AI visualization, but it was surprisingly accurate and helped us choose the perfect style. The trade-in offer was fair. Highly recommend!",
+                  location: "Northbrook, IL",
+                },
+                {
+                  name: "David Chen",
+                  rating: 5,
+                  quote:
+                    "Great service and a fantastic deal. Getting a credit for our old, beat-up door was a huge plus. The installers were courteous and cleaned up everything.",
+                  location: "Chicago, IL",
+                },
+              ].map((testimonial) => (
+                <div
+                  key={testimonial.name}
+                  className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg transform hover:-translate-y-2 transition-transform duration-300"
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="font-semibold text-slate-900">
+                      {testimonial.name}
+                    </p>
+                    <StarRating rating={testimonial.rating} />
+                  </div>
+                  <blockquote className="mt-4 text-slate-700 italic">
+                    <p>{`"${testimonial.quote}"`}</p>
+                  </blockquote>
+                  <footer className="mt-4 text-sm text-slate-500">
+                    From{" "}
+                    <span className="font-semibold text-slate-600">
+                      {testimonial.location}
+                    </span>
+                  </footer>
                 </div>
-                <blockquote className="mt-4 text-slate-700 italic">
-                  <p>
-                    {
-                      "The entire process was seamless! From uploading a photo to the final installation, the team was professional and efficient. My new garage door looks amazing."
-                    }
-                  </p>
-                </blockquote>
-                <footer className="mt-4 text-sm text-slate-500">
-                  From{" "}
-                  <span className="font-semibold text-slate-600">
-                    Naperville, IL
-                  </span>
-                </footer>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-slate-900">Mark P.</p>
-                  <StarRating rating={5} />
-                </div>
-                <blockquote className="mt-4 text-slate-700 italic">
-                  <p>
-                    {
-                      "I was skeptical about the AI visualization, but it was surprisingly accurate and helped us choose the perfect style. The trade-in offer was fair. Highly recommend!"
-                    }
-                  </p>
-                </blockquote>
-                <footer className="mt-4 text-sm text-slate-500">
-                  From{" "}
-                  <span className="font-semibold text-slate-600">
-                    Northbrook, IL
-                  </span>
-                </footer>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-slate-200/80 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-slate-900">David Chen</p>
-                  <StarRating rating={5} />
-                </div>
-                <blockquote className="mt-4 text-slate-700 italic">
-                  <p>
-                    {
-                      "Great service and a fantastic deal. Getting a credit for our old, beat-up door was a huge plus. The installers were courteous and cleaned up everything."
-                    }
-                  </p>
-                </blockquote>
-                <footer className="mt-4 text-sm text-slate-500">
-                  From{" "}
-                  <span className="font-semibold text-slate-600">
-                    Chicago, IL
-                  </span>
-                </footer>
-              </div>
+              ))}
             </div>
-            <div className="mt-12 text-center">
+            <div className="mt-16 text-center">
               <a
                 href="https://www.google.com/search?q=illinois+garage+door+repair#reviews"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 hover:bg-slate-100 transition-colors"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-8 py-4 text-base font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 hover:bg-slate-100 transition-colors"
               >
                 Read More Reviews on Google
               </a>
@@ -810,22 +735,6 @@ export default function Home() {
           </div>
         </section>
       </main>
-
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:flex lg:items-center lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-slate-800">
-              Illinois Garage Door Repair Co.
-            </p>
-            <p className="mt-1 text-sm text-slate-600">
-              {"Proudly Serving Chicago & All Suburbs."}
-            </p>
-          </div>
-          <p className="mt-4 text-sm text-slate-500 lg:mt-0">
-            © {new Date().getFullYear()} All Rights Reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
