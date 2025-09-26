@@ -1,93 +1,127 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import path from "node:path";
+import { promises as fs } from "node:fs";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+// где лежат исходные дизайны на сервере
+const DESIGN_DIR = path.join(process.cwd(), "public", "designs");
+
+// утилита: подгружаем файл и кодируем в base64
+async function fileToBase64(absPath: string) {
+  const buf = await fs.readFile(absPath);
+  return buf.toString("base64");
+}
+
+// утилита: определяем mime по расширению (упрощённо)
+function guessMime(p: string) {
+  const ext = path.extname(p).toLowerCase();
+  if (ext === ".png") return "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
+  if (ext === ".webp") return "image/webp";
+  return "application/octet-stream";
+}
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    const imageFile = formData.get("image") as File;
-    const phone = formData.get("phone") as string;
-    const email = formData.get("email") as string;
-    const doors = (formData.get("doors") as string) || "1";
+    const imageFile = formData.get("image") as File | null;
+    const phone = (formData.get("phone") as string) || "";
+    const email = (formData.get("email") as string) || "";
+    const doors = (formData.get("doors") as string) || "1"; // "1" | "2" | "3"
     const garageType = (formData.get("garageType") as string) || "1-car";
+    // можно передавать одно значение: designId="classic-oak"
+    // или несколько: designId=classic-oak&designId=modern-black
+    const designIdsRaw = formData.getAll("designId");
+    const designIds = designIdsRaw
+      .map((d) => String(d).trim())
+      .filter(Boolean);
 
     if (!imageFile) {
       return NextResponse.json({ error: "Image not found" }, { status: 400 });
     }
+    if (!designIds.length) {
+      return NextResponse.json(
+        { error: "Design ID(s) not provided" },
+        { status: 400 }
+      );
+    }
 
-    // to base64
-    const bytes = await imageFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const base64Image = buffer.toString("base64");
+    // клиентская картинка -> base64
+    const userBytes = Buffer.from(await imageFile.arrayBuffer());
+    const userBase64 = userBytes.toString("base64");
+
+    // подгружаем эталонные дизайны с сервера
+    // допустим, у вас файлы называются `${designId}.png` и лежат в /public/designs
+    const designInlineParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+    for (const id of designIds) {
+      const abs = path.join(DESIGN_DIR, `${id}.png`);
+      try {
+        const b64 = await fileToBase64(abs);
+        designInlineParts.push({
+          inlineData: { mimeType: guessMime(abs), data: b64 },
+        });
+      } catch {
+        return NextResponse.json(
+          { error: `Design file not found for id="${id}"` },
+          { status: 404 }
+        );
+      }
+    }
 
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-    // === UPDATED PROMPT ===
-    const isMultiDoor =
-      doors === "2" || doors === "3" || garageType === "2-car";
+    const isMultiDoor = doors === "2" || doors === "3" || garageType === "2-car";
 
-    const prompt = `
-You are a photo editor. Use the CLIENT'S UPLOADED PHOTO as the BASE LAYER.
-Do NOT generate a new scene. Do NOT crop. Keep the original house, driveway,
-siding, trim, roof, landscaping, and camera perspective exactly as in the input.
+    // ===== СЕМАНТИЧЕСКАЯ ИНПЕЙНТ-ИНСТРУКЦИЯ (mask by text) =====
+    // NB: Gemini лучше слушается чётких шагов, контекста и ограничений.
+    const promptText = [
+      `TASK: Inpaint ONLY the garage door panels on the user's photo using the reference design(s).`,
+      `KEEP: house facade, walls, driveway, background, lighting, shadows, camera perspective, proportions.`,
+      `EDIT SCOPE: strictly the garage door leaf/panels, including visible frames, windows (if present), hardware; do not move the camera.`,
+      `PRESERVE: original environment, exposure, reflections on surrounding surfaces.`,
+      `MATCH: overall color, material, panel layout, window cutouts, and trim from the provided design reference(s).`,
+      `MULTI-DOOR: ${isMultiDoor ? "If there are multiple door sections, apply the same design consistently to each section, preserving spacing and seams." : "Single door: apply design consistently across the whole door."}`,
+      `ALIGNMENT: respect perspective; align panel grid and windows to the user's door plane; keep the door size and opening unchanged.`,
+      `LIGHTING: adapt design to existing scene lighting and shadows; avoid flat overlays.`,
+      `QUALITY: photo-realistic result; no extra artifacts; no text; no watermarks; no extra props.`,
+      `NEGATIVE: do not alter walls, cars, pavement, sky, plants, or any non-door objects.`,
+      "",
+      "Steps:",
+      "1) Identify the garage door area (leaf/panels) in the user's image.",
+      "2) From the reference design image(s), infer the material, color, paneling layout, window placement, and trim.",
+      "3) Transfer only these door attributes onto the user's door, preserving geometry and perspective.",
+      "4) Harmonize lighting and shadows; ensure realistic integration.",
+      "5) Output a single edited image.",
+    ].join("\n");
 
-Task:
-1) Replace ONLY the garage door surface(s) in the input photo with four different door designs.
-2) Produce ONE single image as a 2×2 collage (top-left, top-right, bottom-left, bottom-right).
-3) Each quadrant shows the client’s own house with a different door design composited in.
-4) If the property has ${isMultiDoor ? "multiple" : "a single"} garage door${
-      isMultiDoor ? "s" : ""
-    }, apply each design to ${
-      isMultiDoor ? "all visible doors" : "the visible door"
-    } in the photo for that quadrant.
-5) Preserve perspective, scale, jambs, trim, and tracks; align panels and windows to the opening;
-   match lighting, shadows, reflections, and color temperature to the original photo.
-6) Do not alter anything except the garage door leaf and its glass/hardware (where specified).
-7) Output a single composite image only (no captions or extra borders).
-   Keep the same aspect ratio as the input and add thin, subtle internal gutters between quadrants.
-
-Door styles (in the order and placement specified below):
-A (top-left): Standard short raised panels, white color, with a top-row of windows.
-B (top-right): Standard flat/flush look with wood-tone finish (e.g., medium walnut), with a top-row of windows.
-C (bottom-left): Stamped carriage house style, with classic carriage windows and tasteful decorative hardware.
-D (bottom-right): Modern sleek contemporary style (flush panels); if appropriate, narrow glass lites in a balanced layout.
-
-General rules:
-- Keep trim color and surrounding materials unchanged.
-- Do not add cars, people, logos, or watermarks.
-- Use the highest available resolution from the input image.
-- Return the result as a single raster image (PNG/JPEG) that clearly shows the client’s own home with the four options.
-`;
-
-    const promptContent = [
-      { text: prompt },
+    // Содержимое запроса: сначала текст-инструкция, затем фото клиента, затем 1-3 эталонных дизайна
+    const contents: any[] = [
+      { text: promptText },
       {
         inlineData: {
-          mimeType: imageFile.type,
-          data: base64Image,
+          mimeType: imageFile.type || "image/jpeg",
+          data: userBase64,
         },
       },
+      // до 3 референсов — этого обычно достаточно
+      ...designInlineParts.slice(0, 3),
     ];
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image-preview",
-      contents: promptContent,
-      // Если SDK поддерживает, можно добавить хинты:
-      // generationConfig: { responseMimeType: "image/png" }
+      contents,
+      // можно подсказать формат вывода
+      // generationConfig: { responseMimeType: "image/png" },
     });
 
+    // достаем первую картинку из ответа
     let generatedImageBase64 = "";
-
-    if (
-      response.candidates &&
-      response.candidates[0] &&
-      response.candidates[0].content &&
-      response.candidates[0].content.parts
-    ) {
-      for (const part of response.candidates[0].content.parts) {
-        if (part.inlineData && part.inlineData.data) {
+    if (response?.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts as any[]) {
+        if (part?.inlineData?.data) {
           generatedImageBase64 = part.inlineData.data;
           break;
         }
@@ -97,22 +131,24 @@ General rules:
     if (!generatedImageBase64) {
       return NextResponse.json(
         { error: "Failed to generate image" },
-        { status: 500 }
+        { status: 502 }
       );
     }
 
-    const result = {
-      originalImage: base64Image,
+    // возвращаем и исходник, и результат (base64)
+    return NextResponse.json({
+      userImage: userBase64,
       generatedImage: generatedImageBase64,
-      userInfo: { phone, email, doors, garageType },
-    };
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error("Error in generate-designs API:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+      meta: {
+        phone,
+        email,
+        doors,
+        garageType,
+        designIds,
+      },
+    });
+  } catch (err) {
+    console.error("generate-designs error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
