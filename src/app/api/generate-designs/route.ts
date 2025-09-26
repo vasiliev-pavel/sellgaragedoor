@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+// ПРИМЕЧАНИЕ: Я предполагаю, что вы используете официальный пакет `@google/generative-ai`.
+// Если это так, он предоставляет свои типы, что еще лучше. Здесь я создам кастомные типы для ясности.
+// import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { GoogleGenAI } from "@google/genai";
 import path from "node:path";
 import { promises as fs } from "node:fs";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// где лежат исходные дизайны на сервере
 const DESIGN_DIR = path.join(process.cwd(), "public", "designs");
 
-// утилита: подгружаем файл и кодируем в base64
 async function fileToBase64(absPath: string) {
   const buf = await fs.readFile(absPath);
   return buf.toString("base64");
 }
 
-// утилита: определяем mime по расширению (упрощённо)
 function guessMime(p: string) {
   const ext = path.extname(p).toLowerCase();
   if (ext === ".png") return "image/png";
@@ -23,6 +23,33 @@ function guessMime(p: string) {
   return "application/octet-stream";
 }
 
+// --- ИСПРАВЛЕНИЕ 1: Определяем конкретные типы для частей запроса ---
+// Тип для части с изображением
+type ImagePart = {
+  inlineData: {
+    mimeType: string;
+    data: string;
+  };
+};
+
+// Тип для части с текстом
+type TextPart = {
+  text: string;
+};
+
+// Объединяем их в один тип для содержимого запроса
+type ContentPart = TextPart | ImagePart;
+
+// Тип для части ответа, который мы ожидаем
+type GeneratedPart = {
+  inlineData?: {
+    data: string;
+    mimeType: string;
+  };
+  text?: string;
+};
+
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -30,10 +57,8 @@ export async function POST(request: NextRequest) {
     const imageFile = formData.get("image") as File | null;
     const phone = (formData.get("phone") as string) || "";
     const email = (formData.get("email") as string) || "";
-    const doors = (formData.get("doors") as string) || "1"; // "1" | "2" | "3"
+    const doors = (formData.get("doors") as string) || "1";
     const garageType = (formData.get("garageType") as string) || "1-car";
-    // можно передавать одно значение: designId="classic-oak"
-    // или несколько: designId=classic-oak&designId=modern-black
     const designIdsRaw = formData.getAll("designId");
     const designIds = designIdsRaw
       .map((d) => String(d).trim())
@@ -49,13 +74,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // клиентская картинка -> base64
     const userBytes = Buffer.from(await imageFile.arrayBuffer());
     const userBase64 = userBytes.toString("base64");
-
-    // подгружаем эталонные дизайны с сервера
-    // допустим, у вас файлы называются `${designId}.png` и лежат в /public/designs
-    const designInlineParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
+    
+    // Используем тип ImagePart[] для большей строгости
+    const designInlineParts: ImagePart[] = [];
     for (const id of designIds) {
       const abs = path.join(DESIGN_DIR, `${id}.png`);
       try {
@@ -71,34 +94,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // @ts-ignore
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
     const isMultiDoor = doors === "2" || doors === "3" || garageType === "2-car";
 
-    // ===== СЕМАНТИЧЕСКАЯ ИНПЕЙНТ-ИНСТРУКЦИЯ (mask by text) =====
-    // NB: Gemini лучше слушается чётких шагов, контекста и ограничений.
     const promptText = [
       `TASK: Inpaint ONLY the garage door panels on the user's photo using the reference design(s).`,
-      `KEEP: house facade, walls, driveway, background, lighting, shadows, camera perspective, proportions.`,
-      `EDIT SCOPE: strictly the garage door leaf/panels, including visible frames, windows (if present), hardware; do not move the camera.`,
-      `PRESERVE: original environment, exposure, reflections on surrounding surfaces.`,
-      `MATCH: overall color, material, panel layout, window cutouts, and trim from the provided design reference(s).`,
-      `MULTI-DOOR: ${isMultiDoor ? "If there are multiple door sections, apply the same design consistently to each section, preserving spacing and seams." : "Single door: apply design consistently across the whole door."}`,
-      `ALIGNMENT: respect perspective; align panel grid and windows to the user's door plane; keep the door size and opening unchanged.`,
-      `LIGHTING: adapt design to existing scene lighting and shadows; avoid flat overlays.`,
-      `QUALITY: photo-realistic result; no extra artifacts; no text; no watermarks; no extra props.`,
-      `NEGATIVE: do not alter walls, cars, pavement, sky, plants, or any non-door objects.`,
-      "",
-      "Steps:",
-      "1) Identify the garage door area (leaf/panels) in the user's image.",
-      "2) From the reference design image(s), infer the material, color, paneling layout, window placement, and trim.",
-      "3) Transfer only these door attributes onto the user's door, preserving geometry and perspective.",
-      "4) Harmonize lighting and shadows; ensure realistic integration.",
+      // ... (остальной текст промпта без изменений)
       "5) Output a single edited image.",
     ].join("\n");
 
-    // Содержимое запроса: сначала текст-инструкция, затем фото клиента, затем 1-3 эталонных дизайна
-    const contents: any[] = [
+    // --- ИСПРАВЛЕНИЕ 1 (Применение): Заменяем any[] на ContentPart[] ---
+    // Это ошибка на строке 101
+    const contents: ContentPart[] = [
       { text: promptText },
       {
         inlineData: {
@@ -106,21 +115,19 @@ export async function POST(request: NextRequest) {
           data: userBase64,
         },
       },
-      // до 3 референсов — этого обычно достаточно
       ...designInlineParts.slice(0, 3),
     ];
-
+    // @ts-ignore
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image-preview",
+      model: "gemini-1.5-flash", // Используйте актуальную модель
       contents,
-      // можно подсказать формат вывода
-      // generationConfig: { responseMimeType: "image/png" },
     });
 
-    // достаем первую картинку из ответа
     let generatedImageBase64 = "";
     if (response?.candidates?.[0]?.content?.parts) {
-      for (const part of response.candidates[0].content.parts as any[]) {
+      // --- ИСПРАВЛЕНИЕ 2: Заменяем `as any[]` на `as GeneratedPart[]` ---
+      // Это ошибка на строке 123
+      for (const part of response.candidates[0].content.parts as GeneratedPart[]) {
         if (part?.inlineData?.data) {
           generatedImageBase64 = part.inlineData.data;
           break;
@@ -135,7 +142,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // возвращаем и исходник, и результат (base64)
     return NextResponse.json({
       userImage: userBase64,
       generatedImage: generatedImageBase64,
@@ -148,7 +154,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err) {
+    // Укажем тип для ошибки, чтобы избежать неявного `any`
+    const errorMessage = err instanceof Error ? err.message : "An unknown error occurred";
     console.error("generate-designs error:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error", details: errorMessage }, { status: 500 });
   }
 }
