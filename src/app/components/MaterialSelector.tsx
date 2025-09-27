@@ -1,6 +1,6 @@
 "use client";
 
-import { Material } from "../app/page"; // Предполагается, что тип Material экспортируется из page.tsx
+import { Material } from "../page"; // Предполагается, что тип Material экспортируется из page.tsx
 
 const materials = [
   { v: "steel", l: "Steel" },
