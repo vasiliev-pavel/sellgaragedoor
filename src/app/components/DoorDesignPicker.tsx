@@ -22,10 +22,10 @@ type DoorDesignPickerProps = {
 
 // Данные для компонента
 const doorDesigns: DoorDesign[] = [
-  { id: 'classic_panel', name: 'Classic Panel', imageUrl: '/designs/placeholder-door-1.png' },
-  { id: 'modern_flush', name: 'Modern Flush', imageUrl: '/designs/placeholder-door-2.png' },
-  { id: 'carriage_house', name: 'Carriage House', imageUrl: '/designs/placeholder-door-3.png' },
-  { id: 'contemporary_glass', name: 'Contemporary Glass', imageUrl: '/designs/placeholder-door-4.png' },
+  { id: 'bridgeport_stell', name: 'Bridgeport steel', imageUrl: '/designs/placeholder-door-1.png' },
+  { id: 'modern_steel', name: 'Modern Steel', imageUrl: '/designs/placeholder-door-2.png' },
+  { id: 'gallery_steel', name: 'Gallery Steel', imageUrl: '/designs/placeholder-door-3.png' },
+  { id: 'classic-steel', name: 'Classic Steel', imageUrl: '/designs/placeholder-door-4.png' },
 ];
 
 const doorColors: DoorColor[] = [

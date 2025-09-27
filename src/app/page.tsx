@@ -99,7 +99,19 @@ export default function Home() {
       setShowTips(true);
     }
   };
-
+  // Вспомогательная функция для конвертации File -> base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Результат будет 'data:image/jpeg;base64,....', нам нужна только часть после запятой
+        const base64String = (reader.result as string).split(',')[1];
+        resolve(base64String);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
   const continueToUpload = () => {
     setShowTips(false);
     fileInputRef.current?.click();
@@ -206,17 +218,31 @@ export default function Home() {
           formDataToSend.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
       }
     });
-
+  
     try {
       const response = await fetch("/api/generate-designs", { method: "POST", body: formDataToSend });
       if (response.ok) {
-        const result = await response.json();
-        sessionStorage.setItem("garageDesigns", JSON.stringify({ ...result, intake: formData }));
+        const result = await response.json(); 
+      
+        // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
+        // Конвертируем оригинальный файл в base64
+        const originalImageBase64 = await fileToBase64(selectedFile);
+      
+        const payloadForOfferPage = {
+          imageData: result.imageData,         // Сгенерированное изображение от AI
+          originalImageData: originalImageBase64, // Оригинальное изображение пользователя
+          intake: formData,                    // Все данные из формы
+        };
+      
+        sessionStorage.setItem("garageDesigns", JSON.stringify(payloadForOfferPage));
+        
         localStorage.removeItem("garageFormPhone");
         localStorage.removeItem("garageFormEmail");
         router.push("/offer");
       } else {
-        alert("An error occurred while processing your request. Please try again.");
+         // Добавим обработку ошибки от сервера
+         const errorResult = await response.json();
+         alert(`An error occurred: ${errorResult.error || "Please try again."}`);
       }
     } catch (err) {
       console.error(err);
@@ -303,3 +329,4 @@ export default function Home() {
     </div>
   );
 }
+
