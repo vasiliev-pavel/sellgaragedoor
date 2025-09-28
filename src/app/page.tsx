@@ -211,36 +211,50 @@ export default function Home() {
     if (!validatePhoneNumber(formData.phone)) return alert("Please enter a valid 10-digit US phone number.");
     
     setLoading(true);
-    const formDataToSend = new FormData();
-    formDataToSend.append("image", selectedFile);
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null) {
-          formDataToSend.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
-      }
-    });
-  
+
     try {
+      // --- ИЗМЕНЕНИЕ 1: ЗАГРУЖАЕМ ИЗОБРАЖЕНИЕ ДИЗАЙНА ---
+      // Убеждаемся, что URL изображения дизайна существует
+      if (!formData.newDoorDesign.imageUrl) {
+        throw new Error("Selected design is missing an image URL.");
+      }
+
+      // Загружаем файл изображения дизайна по его URL
+      const designImageResponse = await fetch(formData.newDoorDesign.imageUrl);
+      if (!designImageResponse.ok) {
+        throw new Error(`Failed to fetch design image: ${designImageResponse.statusText}`);
+      }
+      const designImageBlob = await designImageResponse.blob();
+
+      // --- ИЗМЕНЕНИЕ 2: СОЗДАЕМ FORMDATA С ДВУМЯ ИЗОБРАЖЕНИЯМИ ---
+      const formDataToSend = new FormData();
+      // Изображение 1: Фото гаража пользователя
+      formDataToSend.append("image", selectedFile); 
+      // Изображение 2: Фото выбранного дизайна двери
+      formDataToSend.append("designImage", designImageBlob, "design.png");
+
+      // Добавляем остальные данные
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null) {
+          formDataToSend.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+        }
+      });
+  
       const response = await fetch("/api/generate-designs", { method: "POST", body: formDataToSend });
+      
       if (response.ok) {
         const result = await response.json(); 
-      
-        // --- ИЗМЕНЕНИЕ ЗДЕСЬ ---
-        // Конвертируем оригинальный файл в base64
         const originalImageBase64 = await fileToBase64(selectedFile);
-      
         const payloadForOfferPage = {
-          imageData: result.imageData,         // Сгенерированное изображение от AI
-          originalImageData: originalImageBase64, // Оригинальное изображение пользователя
-          intake: formData,                    // Все данные из формы
+          imageData: result.imageData,
+          originalImageData: originalImageBase64,
+          intake: formData,
         };
-      
         sessionStorage.setItem("garageDesigns", JSON.stringify(payloadForOfferPage));
-        
         localStorage.removeItem("garageFormPhone");
         localStorage.removeItem("garageFormEmail");
         router.push("/offer");
       } else {
-         // Добавим обработку ошибки от сервера
          const errorResult = await response.json();
          alert(`An error occurred: ${errorResult.error || "Please try again."}`);
       }
